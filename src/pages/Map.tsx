@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Star, Users, Navigation, X } from "lucide-react";
+import { useRealProfiles } from "@/hooks/useRealProfiles";
 
 // ── FIX LEAFLET DEFAULT ICON PATHS (broken by bundlers) ─────────────────────
 // @ts-ignore
@@ -130,6 +131,60 @@ const PARKS: Park[] = [
   },
 ];
 
+// ── NEIGHBORHOOD → APPROXIMATE COORDINATES ──────────────────────────────────
+const NEIGHBORHOOD_COORDS: Record<string, [number, number]> = {
+  "Gruene":          [29.7350, -98.1100],
+  "Creekside":       [29.7150, -98.1350],
+  "Hunter's Creek":  [29.6950, -98.1200],
+  "Downtown NB":     [29.7030, -98.1245],
+  "River Chase":     [29.7200, -98.1500],
+  "Landa Park":      [29.7085, -98.1274],
+  "Solms Landing":   [29.6850, -98.1100],
+  "Meyer Ranch":     [29.6700, -98.1350],
+  "Copper Ridge":    [29.7300, -98.1600],
+  "Mission Hills":   [29.6900, -98.1450],
+  "Dry Comal Creek": [29.7100, -98.1050],
+  "Westside NB":     [29.7050, -98.1500],
+};
+
+// Deterministic tiny jitter so stacked markers spread slightly
+function jitter(seed: string, idx: number): [number, number] {
+  const h = seed.charCodeAt(0) + idx * 7;
+  return [(h % 20 - 10) * 0.0005, ((h * 13) % 20 - 10) * 0.0005];
+}
+
+// Background colours matching UserAvatar
+const PASTEL_COLORS = [
+  "hsl(330,60%,88%)", "hsl(45,80%,85%)", "hsl(142,45%,85%)",
+  "hsl(204,65%,85%)", "hsl(270,45%,88%)", "hsl(0,55%,88%)",
+];
+function getBg(id: string) { return PASTEL_COLORS[id.charCodeAt(0) % PASTEL_COLORS.length]; }
+
+function makeAvatarIcon(avatarUrl: string | null, displayName: string | null, userId: string) {
+  const bg = getBg(userId);
+  let inner: string;
+  if (avatarUrl && avatarUrl.startsWith("preset:")) {
+    const emoji = avatarUrl.replace("preset:", "");
+    inner = `<span style="font-size:16px;line-height:1">${emoji}</span>`;
+  } else if (avatarUrl && !avatarUrl.startsWith("preset:")) {
+    inner = `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+  } else {
+    const initials = (displayName ?? "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+    inner = `<span style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.55)">${initials}</span>`;
+  }
+  const html = `
+    <div style="
+      width:36px;height:36px;border-radius:50%;
+      background:${avatarUrl && !avatarUrl.startsWith("preset:") ? "#e5e7eb" : bg};
+      border:2.5px solid white;
+      box-shadow:0 2px 8px rgba(0,0,0,0.18);
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+    ">${inner}</div>
+  `;
+  return L.divIcon({ html, className: "", iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -22] });
+}
+
 // "You are here" pulsing marker via CSS
 const YOU_ARE_HERE_ICON = L.divIcon({
   className: "",
@@ -149,9 +204,11 @@ const YOU_ARE_HERE_ICON = L.divIcon({
 
 export default function MapPage() {
   const navigate = useNavigate();
+  const { profiles } = useRealProfiles();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const momMarkersRef = useRef<L.Marker[]>([]);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const [selected, setSelected] = useState<Park | null>(null);
   const [filter, setFilter] = useState<"all" | "hot">("all");
@@ -196,11 +253,11 @@ export default function MapPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-draw markers whenever filter changes
+  // Re-draw park markers whenever filter changes
   useEffect(() => {
     if (!leafletMap.current) return;
 
-    // Remove existing markers
+    // Remove existing park markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
@@ -229,6 +286,35 @@ export default function MapPage() {
       markersRef.current.push(marker);
     });
   }, [filter]);
+
+  // Draw mom avatar markers whenever profiles load
+  useEffect(() => {
+    if (!leafletMap.current) return;
+
+    // Remove old mom markers
+    momMarkersRef.current.forEach((m) => m.remove());
+    momMarkersRef.current = [];
+
+    const nbProfiles = profiles.filter(
+      (p) => p.neighborhood && NEIGHBORHOOD_COORDS[p.neighborhood] && p.display_name
+    );
+
+    nbProfiles.forEach((p, idx) => {
+      const base = NEIGHBORHOOD_COORDS[p.neighborhood!];
+      const [dlat, dlng] = jitter(p.id, idx);
+      const icon = makeAvatarIcon(p.avatar_url, p.display_name, p.id);
+      const marker = L.marker([base[0] + dlat, base[1] + dlng], { icon, zIndexOffset: -10 })
+        .addTo(leafletMap.current!)
+        .bindPopup(`
+          <div style="font-family:sans-serif;min-width:130px;line-height:1.4">
+            <strong style="font-size:13px">${p.display_name}</strong>
+            <div style="font-size:11px;color:#888">${p.neighborhood}</div>
+            ${p.kids_ages?.length ? `<div style="font-size:11px;color:#555;margin-top:2px">Kids: ${p.kids_ages.join(", ")}</div>` : ""}
+          </div>
+        `, { closeButton: false });
+      momMarkersRef.current.push(marker);
+    });
+  }, [profiles]);
 
   const locateMe = () => {
     navigator.geolocation.getCurrentPosition(
