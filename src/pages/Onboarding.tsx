@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, MapPin, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -88,7 +88,78 @@ function StepNeighborhood({ value, onChange, onNext, onBack }: { value: string; 
   );
 }
 
-// ── STEP 3: Kids' Ages ───────────────────────────────────
+// ── STEP 3: Location ─────────────────────────────────────
+type LocationStepProps = {
+  onGrant: (lat: number, lng: number) => void;
+  onSkip: () => void;
+  onBack: () => void;
+};
+function StepLocation({ onGrant, onSkip, onBack }: LocationStepProps) {
+  const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
+  const [requesting, setRequesting] = useState(false);
+
+  const requestLocation = () => {
+    setRequesting(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setStatus("granted");
+        setRequesting(false);
+        onGrant(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setStatus("denied");
+        setRequesting(false);
+      },
+      { timeout: 10000 }
+    );
+  };
+
+  return (
+    <div className="flex flex-col flex-1 px-6 pt-4">
+      <div className="text-5xl mb-6">📍</div>
+      <h2 className="font-display font-black text-3xl mb-2 leading-tight">Find parks near you</h2>
+      <p className="text-muted-foreground text-base mb-8">
+        Allow location so the map opens right where you are — no searching required.
+      </p>
+
+      {status === "idle" && (
+        <button
+          onClick={requestLocation}
+          disabled={requesting}
+          className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-3"
+        >
+          {requesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Navigation className="h-5 w-5" />}
+          {requesting ? "Requesting…" : "Allow Location"}
+        </button>
+      )}
+
+      {status === "granted" && (
+        <div className="w-full py-4 rounded-2xl bg-primary/10 border border-primary text-primary font-bold text-base flex items-center justify-center gap-2 mb-3">
+          <MapPin className="h-5 w-5" />
+          Location saved ✓
+        </div>
+      )}
+
+      {status === "denied" && (
+        <div className="bg-muted rounded-2xl px-4 py-3 mb-3 text-sm text-muted-foreground">
+          No problem — you can allow this later in your device Settings. The map will still show parks in your area.
+        </div>
+      )}
+
+      <div className="mt-auto flex gap-3 py-4">
+        <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
+        <button
+          onClick={onSkip}
+          className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all text-muted-foreground"
+        >
+          {status === "granted" ? "Continue →" : "Skip"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 4: Kids' Ages ───────────────────────────────────
 function StepKids({ value, onChange, onNext, onBack }: { value: string[]; onChange: (v: string[]) => void; onNext: () => void; onBack: () => void }) {
   const toggle = (age: string) =>
     onChange(value.includes(age) ? value.filter((a) => a !== age) : [...value, age]);
@@ -167,11 +238,13 @@ export default function Onboarding() {
   // Lifted state
   const [name, setName] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [kidsAges, setKidsAges] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
 
-  const TOTAL = 4;
-  const stepLabels = ["Your name", "Neighborhood", "Kids' ages", "Interests"];
+  const TOTAL = 5;
+  const stepLabels = ["Name", "Neighborhood", "Location", "Kids' ages", "Interests"];
 
   const next = () => {
     if (step < TOTAL - 1) setStep((s) => s + 1);
@@ -185,14 +258,19 @@ export default function Onboarding() {
     if (!user) return;
     setSaving(true);
     try {
+      const updates: Record<string, unknown> = {
+        display_name: name.trim(),
+        neighborhood,
+        kids_ages: kidsAges,
+        interests,
+      };
+      if (lat !== null && lng !== null) {
+        updates.lat = lat;
+        updates.lng = lng;
+      }
       const { error } = await supabase
         .from("profiles")
-        .update({
-          display_name: name.trim(),
-          neighborhood,
-          kids_ages: kidsAges,
-          interests,
-        })
+        .update(updates)
         .eq("id", user.id);
 
       if (error) throw error;
@@ -238,8 +316,15 @@ export default function Onboarding() {
         <div key={step} className="flex-1 flex flex-col animate-in slide-in-from-right-4 duration-250">
           {step === 0 && <StepName value={name} onChange={setName} onNext={next} />}
           {step === 1 && <StepNeighborhood value={neighborhood} onChange={setNeighborhood} onNext={next} onBack={back} />}
-          {step === 2 && <StepKids value={kidsAges} onChange={setKidsAges} onNext={next} onBack={back} />}
-          {step === 3 && <StepInterests value={interests} onChange={setInterests} onFinish={finish} onBack={back} saving={saving} />}
+          {step === 2 && (
+            <StepLocation
+              onGrant={(la, ln) => { setLat(la); setLng(ln); }}
+              onSkip={next}
+              onBack={back}
+            />
+          )}
+          {step === 3 && <StepKids value={kidsAges} onChange={setKidsAges} onNext={next} onBack={back} />}
+          {step === 4 && <StepInterests value={interests} onChange={setInterests} onFinish={finish} onBack={back} saving={saving} />}
         </div>
       </div>
     </div>
