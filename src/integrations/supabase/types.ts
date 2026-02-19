@@ -143,6 +143,8 @@ export type Database = {
           kids_ages: string[] | null
           neighborhood: string | null
           updated_at: string
+          verification_status: string
+          verified: boolean
         }
         Insert: {
           avatar_url?: string | null
@@ -154,6 +156,8 @@ export type Database = {
           kids_ages?: string[] | null
           neighborhood?: string | null
           updated_at?: string
+          verification_status?: string
+          verified?: boolean
         }
         Update: {
           avatar_url?: string | null
@@ -165,6 +169,8 @@ export type Database = {
           kids_ages?: string[] | null
           neighborhood?: string | null
           updated_at?: string
+          verification_status?: string
+          verified?: boolean
         }
         Relationships: []
       }
