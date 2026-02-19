@@ -390,7 +390,7 @@ function StepInterests({ value, onChange, onFinish, onBack, saving }: { value: s
 // ── MAIN ONBOARDING ──────────────────────────────────────
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -467,6 +467,14 @@ export default function Onboarding() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-background flex flex-col z-50">
       {/* Top bar */}
@@ -500,7 +508,7 @@ export default function Onboarding() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div key={step} className="flex-1 flex flex-col animate-in slide-in-from-right-4 duration-250">
           {step === 0 && <StepName value={name} onChange={setName} onNext={next} />}
-          {step === 1 && user && (
+          {step === 1 && (
             <StepPhoto
               name={name}
               avatarUrl={avatarUrl}
@@ -509,7 +517,7 @@ export default function Onboarding() {
               onPreset={handlePreset}
               onNext={next}
               onBack={back}
-              userId={user.id}
+              userId={user?.id ?? ""}
             />
           )}
           {step === 2 && <StepNeighborhood value={neighborhood} onChange={setNeighborhood} onNext={next} onBack={back} />}
