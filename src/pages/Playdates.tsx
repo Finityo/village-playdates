@@ -145,9 +145,10 @@ function PlanSheet({ onClose }: { onClose: () => void }) {
   const steps = ["Pick a Park", "Date & Time", "Invite Moms"];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50" onClick={onClose}>
       <div
-        className="bg-background rounded-t-3xl pt-2 pb-0 max-h-[85vh] flex flex-col"
+        className="bg-background rounded-t-3xl pt-2 pb-0 flex flex-col overflow-hidden"
+        style={{ height: "min(85dvh, 85vh)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -175,7 +176,7 @@ function PlanSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Step content */}
-        <div className="flex-1 overflow-y-auto px-5">
+        <div className="flex-1 overflow-y-auto min-h-0 px-5">
           {/* Step 0: Pick Park */}
           {step === 0 && (
             <div className="space-y-2 pb-4">
