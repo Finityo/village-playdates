@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
+import Privacy from "./pages/Privacy";
+import Safety from "./pages/Safety";
+import Terms from "./pages/Terms";
 import Dashboard from "./pages/Dashboard";
 import BrowseMoms from "./pages/BrowseMoms";
 import MomProfile from "./pages/MomProfile";
@@ -23,7 +26,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const queryClient = new QueryClient();
 
 // Pages that suppress the shell nav (top bar + bottom nav)
-const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/"];
+const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/privacy", "/safety", "/terms", "/"];
 
 function Layout() {
   const location = useLocation();
@@ -51,6 +54,9 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/safety" element={<Safety />} />
+          <Route path="/terms" element={<Terms />} />
 
           {/* Protected */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

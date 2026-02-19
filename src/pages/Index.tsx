@@ -178,9 +178,9 @@ export default function Index() {
         <div className="font-display font-black text-base text-primary mb-1">MomCircle</div>
         <p className="text-xs text-muted-foreground">© 2025 · Building villages, one playdate at a time 🛝</p>
         <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
-          <Link to="/signup" className="hover:text-foreground">Privacy</Link>
-          <Link to="/signup" className="hover:text-foreground">Safety</Link>
-          <Link to="/signup" className="hover:text-foreground">Terms</Link>
+          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+          <Link to="/safety" className="hover:text-foreground">Safety</Link>
+          <Link to="/terms" className="hover:text-foreground">Terms</Link>
         </div>
       </footer>
     </div>
