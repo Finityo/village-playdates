@@ -22,7 +22,7 @@ export function useProfile() {
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (!error) setProfile(data);
         setLoading(false);
