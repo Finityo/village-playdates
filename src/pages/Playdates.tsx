@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, MapPin, Calendar, Clock, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Plus, MapPin, Calendar, Clock, X, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -85,15 +85,54 @@ function AttendeeStack({ count, attendees }: { count: number; attendees?: Attend
   );
 }
 
+// ── DELETE CONFIRMATION DIALOG ────────────────────────────
+function DeleteConfirmDialog({ parkName, onCancel, onConfirm }: {
+  parkName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-6" onClick={onCancel}>
+      <div
+        className="bg-background rounded-3xl border border-border shadow-2xl p-6 w-full max-w-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-3xl mb-3 text-center">🗑️</div>
+        <h3 className="font-display font-black text-lg text-center mb-1">Delete Playdate?</h3>
+        <p className="text-sm text-muted-foreground text-center mb-6">
+          <span className="font-bold text-foreground">{parkName}</span> will be removed for all attendees.
+          This can't be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all"
+          >
+            Keep it
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold text-sm active:scale-[0.98] transition-all"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── PLAYDATE CARD ─────────────────────────────────────────
 function PlaydateCard({
   pd,
   userId,
   onRsvp,
+  onDelete,
 }: {
   pd: Playdate;
   userId: string | undefined;
   onRsvp: (pd: Playdate) => void;
+  onDelete: (pd: Playdate) => void;
 }) {
   const isGoing = userId ? pd.rsvps.some((r) => r.user_id === userId) : false;
   const isOwn = userId === pd.creator_id;
@@ -106,15 +145,26 @@ function PlaydateCard({
             <MapPin className="h-4 w-4 text-primary" />
             <span className="font-display font-black text-sm">{pd.park}</span>
           </div>
-          {isGoing ? (
-            <span className="text-[10px] font-black uppercase tracking-wide bg-primary text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-              <CheckCircle2 className="h-2.5 w-2.5" /> Going
-            </span>
-          ) : (
-            <span className="text-[10px] font-black uppercase tracking-wide bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-              Upcoming
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwn && (
+              <button
+                onClick={() => onDelete(pd)}
+                className="p-1.5 rounded-lg bg-background/50 hover:bg-destructive/10 transition-colors active:scale-95"
+                aria-label="Delete playdate"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            )}
+            {isGoing ? (
+              <span className="text-[10px] font-black uppercase tracking-wide bg-primary text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="h-2.5 w-2.5" /> Going
+              </span>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-wide bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                Upcoming
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="px-4 py-4 space-y-3">
@@ -150,6 +200,7 @@ function PlaydateCard({
     </div>
   );
 }
+
 
 // ── PLAN SHEET ────────────────────────────────────────────
 function PlanSheet({
@@ -353,6 +404,7 @@ export default function Playdates() {
   const [loading, setLoading] = useState(true);
   const [showPlan, setShowPlan] = useState(false);
   const [initialPark, setInitialPark] = useState<string | undefined>(undefined);
+  const [confirmDelete, setConfirmDelete] = useState<Playdate | null>(null);
 
   // Auto-open sheet if a park was passed via URL query param
   useEffect(() => {
@@ -371,7 +423,6 @@ export default function Playdates() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      // Fetch attendee profiles for each playdate
       const enriched = await Promise.all(
         (data as Playdate[]).map(async (pd) => {
           if (!pd.rsvps.length) return { ...pd, attendees: [] };
@@ -450,6 +501,13 @@ export default function Playdates() {
     fetchPlaydates();
   };
 
+  const handleDelete = async () => {
+    if (!confirmDelete || !user) return;
+    await supabase.from("playdates").delete().eq("id", confirmDelete.id).eq("creator_id", user.id);
+    setConfirmDelete(null);
+    fetchPlaydates();
+  };
+
   const myPlaydates = playdates.filter(
     (pd) => user && pd.rsvps.some((r) => r.user_id === user.id)
   );
@@ -479,7 +537,7 @@ export default function Playdates() {
               </h2>
               <div className="space-y-3">
                 {myPlaydates.map((pd) => (
-                  <PlaydateCard key={pd.id} pd={pd} userId={user?.id} onRsvp={handleRsvp} />
+                  <PlaydateCard key={pd.id} pd={pd} userId={user?.id} onRsvp={handleRsvp} onDelete={setConfirmDelete} />
                 ))}
               </div>
             </section>
@@ -493,7 +551,7 @@ export default function Playdates() {
             {otherPlaydates.length > 0 ? (
               <div className="space-y-3">
                 {otherPlaydates.map((pd) => (
-                  <PlaydateCard key={pd.id} pd={pd} userId={user?.id} onRsvp={handleRsvp} />
+                  <PlaydateCard key={pd.id} pd={pd} userId={user?.id} onRsvp={handleRsvp} onDelete={setConfirmDelete} />
                 ))}
               </div>
             ) : (
@@ -520,6 +578,14 @@ export default function Playdates() {
           onClose={() => setShowPlan(false)}
           onConfirm={handleCreate}
           initialPark={initialPark}
+        />
+      )}
+
+      {confirmDelete && (
+        <DeleteConfirmDialog
+          parkName={confirmDelete.park}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={handleDelete}
         />
       )}
     </div>
