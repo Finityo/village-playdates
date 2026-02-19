@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
-import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles, MapPin, Calendar, Heart, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles, MapPin, ChevronRight, LogOut } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useAuth } from "@/hooks/useAuth";
 
 const howItWorks = [
   { icon: "🌸", title: "Create Your Profile", desc: "Share your neighborhood, kids' ages, interests, and schedule.", color: "hsl(142 38% 40%)" },
@@ -23,6 +24,9 @@ const testimonials = [
 ];
 
 export default function Index() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
 
@@ -48,13 +52,31 @@ export default function Index() {
             Connect with moms in your neighborhood based on your kids' ages, shared interests, and schedule.
           </p>
 
-          <Link
-            to="/onboarding"
-            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
-          >
-            Get Started — It's Free
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          {user ? (
+            <Link
+              to="/browse"
+              className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
+            >
+              Find Moms Near You
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/signup"
+                className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
+              >
+                Get Started — It's Free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-primary text-primary font-bold text-base active:scale-[0.98] transition-all"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
 
           {/* Trust row */}
           <div className="flex items-center justify-around mt-6 pt-5 border-t border-border">

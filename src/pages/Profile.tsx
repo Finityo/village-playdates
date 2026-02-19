@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Shield, Edit2, MapPin, X, CheckCircle2, Camera } from "lucide-react";
+import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut } from "lucide-react";
 import { MY_INTERESTS, INTEREST_ICONS, AVAILABILITY_ICONS } from "@/data/moms";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 // ── MY PROFILE DATA ──────────────────────────────────────
 const MY_PROFILE = {
@@ -200,7 +202,14 @@ function EditSheet({ onClose }: { onClose: () => void }) {
 // ── MAIN PROFILE PAGE ────────────────────────────────────
 export default function Profile() {
   const [showEdit, setShowEdit] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const p = MY_PROFILE;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const stats = [
     { value: p.playdatesHosted, label: "Hosted" },
@@ -314,7 +323,7 @@ export default function Profile() {
       </section>
 
       {/* Edit profile button (bottom) */}
-      <div className="px-4">
+      <div className="px-4 flex flex-col gap-3">
         <button
           onClick={() => setShowEdit(true)}
           className="w-full py-4 rounded-2xl border-2 border-primary text-primary font-bold text-base active:bg-primary/10 transition-all flex items-center justify-center gap-2"
@@ -322,6 +331,22 @@ export default function Profile() {
           <Edit2 className="h-4 w-4" />
           Edit Profile
         </button>
+
+        {user && (
+          <button
+            onClick={handleSignOut}
+            className="w-full py-3.5 rounded-2xl border border-border bg-card text-muted-foreground font-bold text-sm active:bg-muted transition-all flex items-center justify-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+        )}
+
+        {user && (
+          <p className="text-center text-xs text-muted-foreground pb-2">
+            Signed in as {user.email}
+          </p>
+        )}
       </div>
 
       {/* Edit sheet */}

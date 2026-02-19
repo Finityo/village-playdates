@@ -1,0 +1,132 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+export default function Signup() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || password.length < 6) return;
+
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { display_name: name.trim() },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Account created! 🌸",
+        description: "Check your email to confirm your account, then sign in.",
+      });
+      navigate("/login");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background flex flex-col z-50">
+      {/* Top bar */}
+      <div className="flex items-center px-4 pt-4 pb-2">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-1 rounded-xl active:bg-muted transition-colors">
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </button>
+      </div>
+
+      <div className="flex flex-col flex-1 px-6 pt-4 overflow-y-auto">
+        <div className="text-5xl mb-6">👋</div>
+        <h1 className="font-display font-black text-3xl mb-2 leading-tight">Join MomCircle</h1>
+        <p className="text-muted-foreground text-base mb-8">
+          Create an account and start building your village.
+        </p>
+
+        <form onSubmit={handleSignup} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-bold text-foreground">Your first name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Jessica"
+              required
+              maxLength={50}
+              className="h-14 rounded-2xl bg-card border border-border px-5 text-base outline-none focus:border-primary transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-bold text-foreground">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              maxLength={255}
+              className="h-14 rounded-2xl bg-card border border-border px-5 text-base outline-none focus:border-primary transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-bold text-foreground">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                required
+                minLength={6}
+                className="w-full h-14 rounded-2xl bg-card border border-border px-5 pr-14 text-base outline-none focus:border-primary transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {password.length > 0 && password.length < 6 && (
+              <p className="text-xs text-destructive font-medium">Password must be at least 6 characters</p>
+            )}
+          </div>
+
+          <div className="mt-2">
+            <button
+              type="submit"
+              disabled={loading || !name.trim() || !email.trim() || password.length < 6}
+              className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-all"
+            >
+              {loading ? "Creating account…" : "Create Account 🌸"}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-8 pb-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-bold">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
