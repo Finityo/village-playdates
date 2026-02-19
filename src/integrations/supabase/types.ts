@@ -141,6 +141,8 @@ export type Database = {
           id: string
           interests: string[] | null
           kids_ages: string[] | null
+          lat: number | null
+          lng: number | null
           neighborhood: string | null
           updated_at: string
           verification_status: string
@@ -154,6 +156,8 @@ export type Database = {
           id: string
           interests?: string[] | null
           kids_ages?: string[] | null
+          lat?: number | null
+          lng?: number | null
           neighborhood?: string | null
           updated_at?: string
           verification_status?: string
@@ -167,6 +171,8 @@ export type Database = {
           id?: string
           interests?: string[] | null
           kids_ages?: string[] | null
+          lat?: number | null
+          lng?: number | null
           neighborhood?: string | null
           updated_at?: string
           verification_status?: string

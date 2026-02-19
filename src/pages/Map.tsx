@@ -130,13 +130,41 @@ const PARKS: Park[] = [
   },
 ];
 
+// "You are here" pulsing marker via CSS
+const YOU_ARE_HERE_ICON = L.divIcon({
+  className: "",
+  html: `
+    <div style="position:relative;width:24px;height:24px">
+      <div style="position:absolute;inset:0;border-radius:50%;background:hsl(204,80%,55%);opacity:0.35;animation:pulse-ring 1.8s ease-out infinite"></div>
+      <div style="position:absolute;inset:4px;border-radius:50%;background:hsl(204,80%,55%);border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>
+    </div>
+    <style>
+      @keyframes pulse-ring{0%{transform:scale(1);opacity:0.35}70%{transform:scale(2.4);opacity:0}100%{transform:scale(2.4);opacity:0}}
+    </style>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -16],
+});
+
 export default function MapPage() {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const userMarkerRef = useRef<L.Marker | null>(null);
   const [selected, setSelected] = useState<Park | null>(null);
   const [filter, setFilter] = useState<"all" | "hot">("all");
+
+  const flyToUser = (lat: number, lng: number) => {
+    if (!leafletMap.current) return;
+    leafletMap.current.flyTo([lat, lng], 10, { duration: 1.2 });
+    if (userMarkerRef.current) userMarkerRef.current.remove();
+    userMarkerRef.current = L.marker([lat, lng], { icon: YOU_ARE_HERE_ICON })
+      .addTo(leafletMap.current)
+      .bindPopup("📍 You are here")
+      .openPopup();
+  };
 
   // Initialise the map once
   useEffect(() => {
@@ -154,10 +182,18 @@ export default function MapPage() {
 
     L.control.zoom({ position: "bottomright" }).addTo(leafletMap.current);
 
+    // Request location on mount — fly to user, or silently stay on NB default
+    navigator.geolocation.getCurrentPosition(
+      (pos) => flyToUser(pos.coords.latitude, pos.coords.longitude),
+      () => { /* denied — stay on New Braunfels default */ },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+
     return () => {
       leafletMap.current?.remove();
       leafletMap.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-draw markers whenever filter changes
@@ -196,16 +232,8 @@ export default function MapPage() {
 
   const locateMe = () => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        leafletMap.current?.flyTo([lat, lng], 15, { duration: 1 });
-        const userIcon = makeSvgIcon("hsl(12,82%,65%)", 30);
-        L.marker([lat, lng], { icon: userIcon })
-          .addTo(leafletMap.current!)
-          .bindPopup("📍 You are here")
-          .openPopup();
-      },
-      () => alert("Location access denied. Please enable it in your browser settings.")
+      (pos) => flyToUser(pos.coords.latitude, pos.coords.longitude),
+      () => { /* silently ignore if denied */ }
     );
   };
 
