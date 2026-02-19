@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Send, Shield, MoreVertical } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft, Send, Shield, MoreVertical, Bell, Settings, Home, Search, Calendar, MessageCircle, User } from "lucide-react";
 
 interface Thread {
   id: number;
@@ -80,7 +81,7 @@ export default function Messages() {
   // ── CHAT VIEW ─────────────────────────────────────────────
   if (activeThread) {
     return (
-      <div className="flex flex-col h-screen bg-background">
+      <div className="flex flex-col h-[100dvh] bg-background">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-3 pb-3 bg-card border-b border-border shadow-card flex-shrink-0">
           <button
@@ -198,66 +199,121 @@ export default function Messages() {
 
   // ── THREAD LIST ──────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
-      <div className="px-4 pt-4 pb-2">
-        <h1 className="font-display font-black text-2xl">Messages</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {THREADS.reduce((n, t) => n + t.unread, 0)} unread
-        </p>
-      </div>
+    <div className="flex flex-col h-[100dvh] bg-background">
+      {/* Self-managed top bar */}
+      <header className="flex-shrink-0 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="flex items-center justify-between px-4 h-14">
+          <span className="font-display font-black text-lg">Messages</span>
+          <div className="flex items-center gap-2">
+            <button className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-coral" />
+            </button>
+            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+      </header>
 
-      <div className="divide-y divide-border">
-        {THREADS.map((thread) => (
-          <button
-            key={thread.id}
-            onClick={() => setActiveThread(thread)}
-            className="w-full flex items-center gap-3 px-4 py-4 bg-card active:bg-muted transition-colors text-left"
-          >
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black text-white"
-                style={{ backgroundColor: thread.avatarColor }}
-              >
-                {thread.avatar}
-              </div>
-              {thread.online && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-card" />
-              )}
-            </div>
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-sm text-muted-foreground">
+            {THREADS.reduce((n, t) => n + t.unread, 0)} unread
+          </p>
+        </div>
 
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={`font-bold text-sm ${thread.unread > 0 ? "text-foreground" : "text-foreground/80"}`}>
-                    {thread.name}
-                  </span>
-                  {thread.verified && <Shield className="h-3 w-3 text-primary flex-shrink-0" fill="currentColor" />}
+        <div className="divide-y divide-border">
+          {THREADS.map((thread) => (
+            <button
+              key={thread.id}
+              onClick={() => setActiveThread(thread)}
+              className="w-full flex items-center gap-3 px-4 py-4 bg-card active:bg-muted transition-colors text-left"
+            >
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black text-white"
+                  style={{ backgroundColor: thread.avatarColor }}
+                >
+                  {thread.avatar}
                 </div>
-                <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">{thread.timestamp}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className={`text-xs truncate ${thread.unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                  {thread.lastMessage}
-                </p>
-                {thread.unread > 0 && (
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full gradient-primary text-white text-[10px] font-black flex items-center justify-center">
-                    {thread.unread}
-                  </span>
+                {thread.online && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-card" />
                 )}
               </div>
-            </div>
-          </button>
-        ))}
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`font-bold text-sm ${thread.unread > 0 ? "text-foreground" : "text-foreground/80"}`}>
+                      {thread.name}
+                    </span>
+                    {thread.verified && <Shield className="h-3 w-3 text-primary flex-shrink-0" fill="currentColor" />}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">{thread.timestamp}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`text-xs truncate ${thread.unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                    {thread.lastMessage}
+                  </p>
+                  {thread.unread > 0 && (
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full gradient-primary text-white text-[10px] font-black flex items-center justify-center">
+                      {thread.unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Empty-ish state nudge */}
+        <div className="mx-4 mt-6 mb-6 p-5 rounded-2xl bg-primary/8 border border-primary/20 text-center">
+          <div className="text-2xl mb-2">💬</div>
+          <p className="font-bold text-sm mb-1">Connect with more moms</p>
+          <p className="text-xs text-muted-foreground">Browse nearby moms and send your first message!</p>
+        </div>
       </div>
 
-      {/* Empty-ish state nudge */}
-      <div className="mx-4 mt-6 p-5 rounded-2xl bg-primary/8 border border-primary/20 text-center">
-        <div className="text-2xl mb-2">💬</div>
-        <p className="font-bold text-sm mb-1">Connect with more moms</p>
-        <p className="text-xs text-muted-foreground">Browse nearby moms and send your first message!</p>
-      </div>
+      {/* Self-managed bottom nav */}
+      <BottomNavBar active="/messages" />
     </div>
+  );
+}
+
+const NAV_TABS = [
+  { label: "Home", icon: Home, href: "/" },
+  { label: "Browse", icon: Search, href: "/browse" },
+  { label: "Playdates", icon: Calendar, href: "/playdates" },
+  { label: "Messages", icon: MessageCircle, href: "/messages" },
+  { label: "Profile", icon: User, href: "/profile" },
+];
+
+function BottomNavBar({ active }: { active: string }) {
+  return (
+    <nav className="flex-shrink-0 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
+      <div className="flex items-center justify-around px-2 h-16">
+        {NAV_TABS.map(({ label, icon: Icon, href }) => {
+          const isActive = active === href;
+          return (
+            <Link
+              key={href}
+              to={href}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${isActive ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <div className={`p-1.5 rounded-xl transition-all ${isActive ? "bg-primary/10" : ""}`}>
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.8} />
+              </div>
+              <span className={`text-[10px] font-bold ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

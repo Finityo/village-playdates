@@ -17,25 +17,24 @@ import MobileTopBar from "./components/MobileTopBar";
 const queryClient = new QueryClient();
 
 // Pages that suppress the shell nav
-const PROFILE_ROUTES = ["/mom/", "/onboarding"];
+const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages"];
 
 function Layout() {
   const location = useLocation();
-  const isProfilePage = PROFILE_ROUTES.some(r => location.pathname.startsWith(r)) || location.pathname === "/onboarding";
-  
+  const suppressShell = SHELL_SUPPRESSED_ROUTES.some(r => location.pathname.startsWith(r));
+
   const pageTitles: Record<string, string> = {
     "/": "MomCircle",
     "/browse": "Find Moms",
     "/playdates": "Playdates",
-    "/messages": "Messages",
     "/profile": "My Profile",
   };
   const title = pageTitles[location.pathname];
 
   return (
     <>
-      {!isProfilePage && <MobileTopBar title={title} />}
-      <main className={`${isProfilePage ? "" : "pt-14"} ${isProfilePage ? "pb-0" : "pb-20"}`}>
+      {!suppressShell && <MobileTopBar title={title} />}
+      <main className={`${suppressShell ? "" : "pt-14"} ${suppressShell ? "pb-0" : "pb-20"}`}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/browse" element={<BrowseMoms />} />
@@ -47,7 +46,7 @@ function Layout() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!isProfilePage && <BottomNav />}
+      {!suppressShell && <BottomNav />}
     </>
   );
 }
