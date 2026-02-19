@@ -35,8 +35,9 @@ const INTEREST_OPTIONS = [
 ];
 const INTEREST_CHIP_OPTIONS = ["All", "Outdoor play", "Arts & Crafts", "Montessori", "Nature walks", "Sports & Active play", "Science & STEM", "Music & Dance"];
 const NEIGHBORHOOD_OPTIONS = [
-  "Riverside Park", "Sunfield District", "Maplewood Heights", "Cedarwood Commons",
-  "Green Valley", "Harbor View",
+  "Gruene", "Creekside", "Hunter's Creek", "Downtown New Braunfels",
+  "River Chase", "Landa Park", "Solms Landing", "Meyer Ranch",
+  "Copper Ridge", "Mission Hills", "Dry Comal Creek", "Westside NB",
 ];
 
 interface Filters {
