@@ -9,6 +9,7 @@ export interface RealProfile {
   kids_ages: string[] | null;
   interests: string[] | null;
   bio: string | null;
+  verified: boolean;
 }
 
 /**
@@ -22,7 +23,7 @@ export function useRealProfiles() {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, display_name, avatar_url, neighborhood, kids_ages, interests, bio")
+      .select("id, display_name, avatar_url, neighborhood, kids_ages, interests, bio, verified")
       .not("display_name", "is", null)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
