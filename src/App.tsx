@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import BrowseMoms from "./pages/BrowseMoms";
 import MomProfile from "./pages/MomProfile";
 import Messages from "./pages/Messages";
@@ -21,15 +22,18 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-// Pages that suppress the shell nav
-const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup"];
+// Pages that suppress the shell nav (top bar + bottom nav)
+const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/"];
 
 function Layout() {
   const location = useLocation();
-  const suppressShell = SHELL_SUPPRESSED_ROUTES.some(r => location.pathname.startsWith(r));
+  // "/" is always the public landing — suppress nav shell on it too
+  const suppressShell = SHELL_SUPPRESSED_ROUTES.some(r =>
+    r === "/" ? location.pathname === "/" : location.pathname.startsWith(r)
+  );
 
   const pageTitles: Record<string, string> = {
-    "/": "MomCircle",
+    "/dashboard": "MomCircle",
     "/browse": "Find Moms",
     "/playdates": "Playdates",
     "/map": "Park Map",
@@ -49,6 +53,7 @@ function Layout() {
           <Route path="/onboarding" element={<Onboarding />} />
 
           {/* Protected */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/browse" element={<ProtectedRoute><BrowseMoms /></ProtectedRoute>} />
           <Route path="/mom/:id" element={<ProtectedRoute><MomProfile /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
