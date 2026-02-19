@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Heart, MessageCircle, Users, Shield, Star, Filter, Search, CheckCircle2, X, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MOMS, MY_INTERESTS, INTEREST_ICONS, type Mom } from "@/data/moms";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useProfile } from "@/hooks/useProfile";
 
 const DISTANCE_OPTIONS = ["0.5 mi", "1 mi", "2 mi", "5 mi"];
 const AGE_GROUP_OPTIONS = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];
@@ -42,13 +43,32 @@ function kidAgeToGroupKey(age: string): string {
 }
 
 export default function BrowseMoms() {
+  const { profile } = useProfile();
   const [moms, setMoms] = useState<Mom[]>(MOMS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedInterest, setSelectedInterest] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [pendingFilters, setPendingFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
   const { notifyNewMatch } = useNotifications();
+
+  // Pre-populate filters from the user's real profile once it loads
+  useEffect(() => {
+    if (filtersInitialized || !profile) return;
+    const profileInterests = profile.interests ?? [];
+    const profileKidsAges = profile.kids_ages ?? [];
+    if (profileInterests.length > 0 || profileKidsAges.length > 0) {
+      const preloaded: Filters = {
+        distance: "",
+        ageGroups: profileKidsAges,
+        interests: profileInterests,
+      };
+      setFilters(preloaded);
+      setPendingFilters(preloaded);
+    }
+    setFiltersInitialized(true);
+  }, [profile, filtersInitialized]);
 
   const activeCount = countActiveFilters(filters);
 

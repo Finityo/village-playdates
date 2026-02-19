@@ -44,15 +44,28 @@ function getAvatarColor(id: string): string {
 
 // ── EDIT PROFILE SHEET ────────────────────────────────────
 function EditSheet({ onClose }: { onClose: () => void }) {
+  // Use the shared profile hook — parent already loaded it, this reuses the same state
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
-  const [name, setName] = useState(profile?.display_name ?? "");
-  const [neighborhood, setNeighborhood] = useState(profile?.neighborhood ?? "");
-  const [bio, setBio] = useState(profile?.bio ?? "");
-  const [selectedKids, setSelectedKids] = useState<string[]>(profile?.kids_ages ?? []);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>(profile?.interests ?? []);
+  const [name, setName] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [bio, setBio] = useState("");
+  const [selectedKids, setSelectedKids] = useState<string[]>([]);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
+
+  // Pre-fill once profile is available
+  useEffect(() => {
+    if (initialized || !profile) return;
+    setName(profile.display_name ?? "");
+    setNeighborhood(profile.neighborhood ?? "");
+    setBio(profile.bio ?? "");
+    setSelectedKids(profile.kids_ages ?? []);
+    setSelectedInterests(profile.interests ?? []);
+    setInitialized(true);
+  }, [profile, initialized]);
 
   const toggleKid = (age: string) =>
     setSelectedKids((prev) => prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]);
