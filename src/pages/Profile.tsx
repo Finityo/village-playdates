@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut, Loader2 } from "lucide-react";
-import { INTEREST_ICONS, AVAILABILITY_ICONS } from "@/data/moms";
+import { INTEREST_ICONS } from "@/data/moms";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AVATAR_COLORS = [
   "hsl(142 38% 40%)", "hsl(12 82% 65%)", "hsl(204 80% 62%)",
@@ -42,9 +43,118 @@ function getAvatarColor(id: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+// ── AVATAR UPLOADER ────────────────────────────────────────
+function AvatarUploader({
+  userId,
+  avatarUrl,
+  displayName,
+  avatarColor,
+  onUploaded,
+}: {
+  userId: string;
+  avatarUrl: string | null;
+  displayName: string;
+  avatarColor: string;
+  onUploaded: (url: string) => void;
+}) {
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type and size (5 MB max)
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast({ title: "Unsupported format", description: "Please use JPG, PNG, or WebP.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5 MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${userId}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    // Add cache-bust so the browser fetches the new image
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("id", userId);
+
+    if (profileError) {
+      toast({ title: "Couldn't save avatar", description: profileError.message, variant: "destructive" });
+    } else {
+      onUploaded(url);
+      toast({ title: "Photo updated! 📸" });
+    }
+    setUploading(false);
+    // Reset input so the same file can be re-selected
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const initials = getInitials(displayName);
+
+  return (
+    <div className="relative inline-block">
+      {/* Avatar circle */}
+      <div
+        className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-soft flex-shrink-0 cursor-pointer"
+        onClick={() => !uploading && fileRef.current?.click()}
+        style={{ backgroundColor: avatarUrl ? undefined : avatarColor }}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white">
+            {initials}
+          </div>
+        )}
+      </div>
+
+      {/* Camera button overlay */}
+      <button
+        onClick={() => !uploading && fileRef.current?.click()}
+        disabled={uploading}
+        className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-soft transition-all active:scale-90"
+        aria-label="Change profile photo"
+      >
+        {uploading ? (
+          <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
+        ) : (
+          <Camera className="h-3.5 w-3.5 text-white" />
+        )}
+      </button>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
+
 // ── EDIT PROFILE SHEET ────────────────────────────────────
 function EditSheet({ onClose }: { onClose: () => void }) {
-  // Use the shared profile hook — parent already loaded it, this reuses the same state
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -56,7 +166,6 @@ function EditSheet({ onClose }: { onClose: () => void }) {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [initialized, setInitialized] = useState(false);
 
-  // Pre-fill once profile is available
   useEffect(() => {
     if (initialized || !profile) return;
     setName(profile.display_name ?? "");
@@ -203,12 +312,22 @@ function EditSheet({ onClose }: { onClose: () => void }) {
 export default function Profile() {
   const [showEdit, setShowEdit] = useState(false);
   const { user, signOut } = useAuth();
-  const { profile, loading } = useProfile();
+  const { profile, loading, updateProfile } = useProfile();
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Sync local avatar url from profile
+  useEffect(() => {
+    if (profile?.avatar_url) setLocalAvatarUrl(profile.avatar_url);
+  }, [profile?.avatar_url]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleAvatarUploaded = (url: string) => {
+    setLocalAvatarUrl(url);
   };
 
   if (loading) {
@@ -222,6 +341,7 @@ export default function Profile() {
   const displayName = profile?.display_name ?? user?.email?.split("@")[0] ?? "Mom";
   const initials = getInitials(displayName);
   const avatarColor = user ? getAvatarColor(user.id) : "hsl(204 80% 62%)";
+  const avatarUrl = localAvatarUrl ?? profile?.avatar_url ?? null;
   const neighborhood = profile?.neighborhood;
   const bio = profile?.bio;
   const kidsAges = profile?.kids_ages ?? [];
@@ -234,13 +354,24 @@ export default function Profile() {
     <div className="min-h-screen bg-background pb-6">
       {/* Banner */}
       <div className="relative h-32 gradient-banner">
+        {/* Avatar positioned over banner bottom edge */}
         <div className="absolute -bottom-12 left-5">
-          <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white border-4 border-background shadow-soft"
-            style={{ backgroundColor: avatarColor }}
-          >
-            {initials}
-          </div>
+          {user ? (
+            <AvatarUploader
+              userId={user.id}
+              avatarUrl={avatarUrl}
+              displayName={displayName}
+              avatarColor={avatarColor}
+              onUploaded={handleAvatarUploaded}
+            />
+          ) : (
+            <div
+              className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white border-4 border-background shadow-soft"
+              style={{ backgroundColor: avatarColor }}
+            >
+              {initials}
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowEdit(true)}
@@ -252,11 +383,23 @@ export default function Profile() {
 
       {/* Name + neighborhood */}
       <div className="px-5 pt-14 pb-4">
-        <h1 className="font-display font-black text-2xl mb-0.5">{displayName}</h1>
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
+        <div className="flex items-center gap-2 mb-0.5">
+          <h1 className="font-display font-black text-2xl">{displayName}</h1>
+          {profile?.verified && (
+            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20">
+              <Shield className="h-2.5 w-2.5" fill="currentColor" />
+              Verified
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
           {neighborhood && <><MapPin className="h-3.5 w-3.5" /><span>{neighborhood}</span><span className="text-muted-foreground/40">·</span></>}
           <span>Member since {memberSince}</span>
         </div>
+        <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
+          <Camera className="h-3 w-3" />
+          Tap your photo to update it
+        </p>
         {bio ? (
           <p className="text-sm text-foreground/80 leading-relaxed">{bio}</p>
         ) : (

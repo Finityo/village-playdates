@@ -479,9 +479,17 @@ function RealProfileCard({ profile, myInterests }: { profile: RealProfile; myInt
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-sm truncate">{profile.display_name ?? "Community Mom"}</span>
-              <span className="flex-shrink-0 text-[10px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Real</span>
+              {profile.verified && (
+                <span className="inline-flex items-center gap-0.5 flex-shrink-0 text-[10px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/20">
+                  <Shield className="h-2.5 w-2.5" fill="currentColor" />
+                  Verified
+                </span>
+              )}
+              {!profile.verified && (
+                <span className="flex-shrink-0 text-[10px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Real</span>
+              )}
             </div>
             {profile.neighborhood && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
