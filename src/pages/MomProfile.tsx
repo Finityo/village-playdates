@@ -63,7 +63,7 @@ export default function MomProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* ── BANNER ─────────────────────────────────────── */}
       <div className="relative h-52 md:h-64 overflow-hidden">
         <img
@@ -347,8 +347,8 @@ export default function MomProfile() {
         </div>
       </div>
 
-      {/* ── STICKY BOTTOM BAR (mobile) ─────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background/95 backdrop-blur border-t border-border px-4 py-3 flex gap-3 z-30">
+      {/* ── STICKY BOTTOM BAR ──────────────────────────── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border px-4 pt-3 pb-4 flex gap-3 z-30 safe-area-bottom">
         <button
           onClick={handleConnect}
           className={`flex-1 py-3 rounded-xl text-sm font-bold transition ${
