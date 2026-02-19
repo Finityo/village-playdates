@@ -1,16 +1,13 @@
 /**
  * Stripe Identity — useStripeIdentity Hook
  *
- * Handles:
- *  1. Creating a Stripe Identity verification session via the edge function
- *  2. Redirecting the user to Stripe's hosted verification page
- *  3. Polling the session status after the user returns (via ?session_id= param)
- *
- * Usage:
- *   const { startVerification, pollStatus, loading, error } = useStripeIdentity(userId);
+ * Every request to the edge function is authenticated with the user's JWT.
+ * The edge function validates the token and enforces that users can only
+ * create/poll their own verification sessions.
  */
 
 import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import type {
   CreateSessionResponse,
   PollSessionResponse,
@@ -21,20 +18,25 @@ const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/str
 
 interface UseStripeIdentityOptions {
   userId: string;
-  /**
-   * Called when the user's profile is confirmed as verified.
-   * Use this to refetch the profile or update local state.
-   */
   onVerified?: () => void;
 }
 
 interface UseStripeIdentityReturn {
   loading: boolean;
   error: string | null;
-  /** Redirects the user to Stripe's hosted verification flow */
   startVerification: () => Promise<void>;
-  /** Call this when the user returns from Stripe (e.g. on page load with ?session_id= in URL) */
   pollStatus: (sessionId: string) => Promise<VerificationStatus | null>;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("You must be signed in to verify your identity.");
+  }
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${session.access_token}`,
+  };
 }
 
 export function useStripeIdentity({
@@ -49,11 +51,12 @@ export function useStripeIdentity({
     setError(null);
 
     try {
+      const headers = await getAuthHeaders();
       const returnUrl = `${window.location.origin}/profile?verify_return=1`;
 
       const res = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           action: "create_session",
           userId,
@@ -86,9 +89,11 @@ export function useStripeIdentity({
       setError(null);
 
       try {
+        const headers = await getAuthHeaders();
+
         const res = await fetch(EDGE_FUNCTION_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ action: "poll_session", sessionId }),
         });
 
