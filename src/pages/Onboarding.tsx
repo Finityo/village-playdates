@@ -6,9 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const NEIGHBORHOODS = [
-  "Riverside Park", "Sunfield District", "Maplewood Heights",
-  "Cedarwood Commons", "Green Valley", "Harbor View",
-  "Oak Park", "Midtown", "Lakeside",
+  "Gruene", "Creekside", "Hunter's Creek", "Downtown New Braunfels",
+  "River Chase", "Landa Park", "Solms Landing", "Meyer Ranch",
+  "Copper Ridge", "Mission Hills", "Dry Comal Creek", "Westside NB",
 ];
 
 const KIDS_AGES = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];

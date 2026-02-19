@@ -13,9 +13,9 @@ const AVATAR_COLORS = [
 ];
 
 const NEIGHBORHOODS = [
-  "Riverside Park", "Sunfield District", "Maplewood Heights",
-  "Cedarwood Commons", "Green Valley", "Harbor View",
-  "Oak Park", "Midtown", "Lakeside",
+  "Gruene", "Creekside", "Hunter's Creek", "Downtown New Braunfels",
+  "River Chase", "Landa Park", "Solms Landing", "Meyer Ranch",
+  "Copper Ridge", "Mission Hills", "Dry Comal Creek", "Westside NB",
 ];
 
 const ALL_INTERESTS = [
