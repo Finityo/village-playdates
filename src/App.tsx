@@ -9,6 +9,7 @@ import MomProfile from "./pages/MomProfile";
 import Messages from "./pages/Messages";
 import Playdates from "./pages/Playdates";
 import Onboarding from "./pages/Onboarding";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import MobileTopBar from "./components/MobileTopBar";
@@ -42,6 +43,7 @@ function Layout() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/playdates" element={<Playdates />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
