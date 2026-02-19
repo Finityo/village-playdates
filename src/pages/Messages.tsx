@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Shield, MoreVertical, Bell, Settings, Home, Search, Calendar, MessageCircle, User } from "lucide-react";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Thread {
   id: number;
@@ -57,6 +58,7 @@ export default function Messages() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { notifyNewMessage } = useNotifications();
 
   useEffect(() => {
     if (activeThread) {
@@ -65,8 +67,8 @@ export default function Messages() {
     }
   }, [activeThread]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback((text: string) => {
+    if (!text.trim() || !activeThread) return;
     const newMsg: Message = {
       id: messages.length + 1,
       from: "me",
@@ -76,7 +78,30 @@ export default function Messages() {
     setMessages((prev) => [...prev, newMsg]);
     setInput("");
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-  };
+
+    // Simulate the other mom replying after 3 s → triggers local notification
+    const REPLIES = [
+      "Sounds great, see you then! 🌸",
+      "Perfect! Can't wait 🎉",
+      "Yay! My little one is so excited!",
+      "Awesome — I'll bring coffee ☕",
+    ];
+    const reply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          from: "them",
+          text: reply,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Fire local notification so it shows on the lock screen / notification tray
+      notifyNewMessage(activeThread.name, reply);
+    }, 3000);
+  }, [activeThread, messages.length, notifyNewMessage]);
 
   // ── CHAT VIEW ─────────────────────────────────────────────
   if (activeThread) {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, MapPin, Calendar, Users, ChevronRight, X, Clock } from "lucide-react";
 import { MOMS } from "@/data/moms";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Playdate {
   id: number;
@@ -123,7 +124,7 @@ function PlaydateCard({ pd }: { pd: Playdate }) {
 }
 
 // ── PLAN PLAYDATE SHEET ─────────────────────────────────
-function PlanSheet({ onClose }: { onClose: () => void }) {
+function PlanSheet({ onClose, onConfirm }: { onClose: () => void; onConfirm: (park: string, time: string) => void }) {
   const [step, setStep] = useState(0);
   const [selectedPark, setSelectedPark] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -297,7 +298,7 @@ function PlanSheet({ onClose }: { onClose: () => void }) {
             </button>
           ) : (
             <button
-              onClick={onClose}
+              onClick={() => { onConfirm(selectedPark, selectedTime); onClose(); }}
               disabled={!canNext[2]}
               className="flex-1 py-3.5 rounded-2xl gradient-primary text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98] transition-all"
             >
@@ -313,6 +314,7 @@ function PlanSheet({ onClose }: { onClose: () => void }) {
 // ── MAIN PAGE ────────────────────────────────────────────
 export default function Playdates() {
   const [showPlan, setShowPlan] = useState(false);
+  const { schedulePlaydateReminder } = useNotifications();
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -351,7 +353,16 @@ export default function Playdates() {
       </button>
 
       {/* Bottom sheet */}
-      {showPlan && <PlanSheet onClose={() => setShowPlan(false)} />}
+      {showPlan && (
+        <PlanSheet
+          onClose={() => setShowPlan(false)}
+          onConfirm={(park, time) => {
+            // Schedule a reminder notification ~5 seconds from now (demo);
+            // in production this would be 1 hour before the actual playdate time
+            schedulePlaydateReminder(park, time, 5000);
+          }}
+        />
+      )}
     </div>
   );
 }
