@@ -49,10 +49,10 @@ export default function Index() {
           </p>
 
           <Link
-            to="/browse"
+            to="/onboarding"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
           >
-            Find Moms Near Me
+            Get Started — It's Free
             <ArrowRight className="h-4 w-4" />
           </Link>
 
