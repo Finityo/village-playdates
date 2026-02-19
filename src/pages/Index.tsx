@@ -1,14 +1,14 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles,
-  MapPin, ChevronRight, Calendar, Clock, MessageCircle, Heart,
-  Zap, Bell
+  MapPin, ChevronRight, Calendar, Clock, Heart, Zap, Bell, Loader2,
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { MOMS, INTEREST_ICONS } from "@/data/moms";
 
-// ── STATIC DATA (marketing page) ────────────────────────
+// ── STATIC DATA (marketing) ──────────────────────────────
 const howItWorks = [
   { icon: "🌸", title: "Create Your Profile", desc: "Share your neighborhood, kids' ages, interests, and schedule.", color: "hsl(142 38% 40%)" },
   { icon: "🔍", title: "Browse & Filter", desc: "Find moms by distance, kids' ages, and shared interests.", color: "hsl(12 82% 65%)" },
@@ -16,10 +16,8 @@ const howItWorks = [
   { icon: "🛝", title: "Plan a Playdate", desc: "Pick a public park, confirm times, get reminders.", color: "hsl(42 90% 60%)" },
 ];
 const safetyFeatures = [
-  "ID verification required",
-  "Mutual match before messaging",
-  "Public meeting spot suggestions",
-  "No children's photos policy",
+  "ID verification required", "Mutual match before messaging",
+  "Public meeting spot suggestions", "No children's photos policy",
 ];
 const testimonials = [
   { name: "Rachel H.", neighborhood: "Oak Park", text: "Found my best mom-friend in two weeks! Our kids are inseparable now.", kids: "Mom of 2 (ages 3 & 5)", avatar: "RH", color: "hsl(142 38% 40%)" },
@@ -27,41 +25,24 @@ const testimonials = [
   { name: "Mei C.", neighborhood: "Lakeside", text: "We have a group of 6 moms that meets every Saturday. MomCircle built our village!", kids: "Mom of 2 (ages 4 & 6)", avatar: "MC", color: "hsl(204 80% 62%)" },
 ];
 
-// ── UPCOMING PLAYDATES (feed preview data) ───────────────
+// ── UPCOMING PLAYDATES (feed preview) ────────────────────
 const UPCOMING_FEED = [
   {
-    id: 1,
-    park: "Riverside Park",
-    date: "Wed, Feb 19",
-    time: "10:00 AM",
-    emoji: "🌿",
-    attendees: [
-      { avatar: "JM", color: "hsl(142 38% 40%)" },
-      { avatar: "ME", color: "hsl(204 80% 62%)" },
-    ],
+    id: 1, park: "Riverside Park", date: "Wed, Feb 19", time: "10:00 AM", emoji: "🌿",
+    attendees: [{ avatar: "JM", color: "hsl(142 38% 40%)" }, { avatar: "ME", color: "hsl(204 80% 62%)" }],
   },
   {
-    id: 2,
-    park: "Cedarwood Green",
-    date: "Sat, Feb 22",
-    time: "9:00 AM",
-    emoji: "🧘",
-    attendees: [
-      { avatar: "PT", color: "hsl(42 90% 60%)" },
-      { avatar: "AK", color: "hsl(12 82% 65%)" },
-      { avatar: "ME", color: "hsl(204 80% 62%)" },
-    ],
+    id: 2, park: "Cedarwood Green", date: "Sat, Feb 22", time: "9:00 AM", emoji: "🧘",
+    attendees: [{ avatar: "PT", color: "hsl(42 90% 60%)" }, { avatar: "AK", color: "hsl(12 82% 65%)" }, { avatar: "ME", color: "hsl(204 80% 62%)" }],
   },
 ];
 
-// ── QUICK-CONNECT NUDGE MESSAGES ─────────────────────────
 const NUDGES = [
   { emoji: "💌", text: "Amara replied to your icebreaker!", href: "/messages", cta: "Reply now" },
   { emoji: "🎉", text: "2 new moms joined your neighborhood this week!", href: "/browse", cta: "Say hello" },
   { emoji: "📅", text: "Your playdate at Riverside Park is tomorrow!", href: "/playdates", cta: "View details" },
 ];
 
-// ── GREETING helper ──────────────────────────────────────
 function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -69,19 +50,48 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-function getFirstName(email: string): string {
-  // If email like "jessica.m@gmail.com" return "Jessica"
-  const local = email.split("@")[0].replace(/[._\-+]/g, " ");
-  const first = local.split(" ")[0];
-  return first.charAt(0).toUpperCase() + first.slice(1);
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
 }
 
-// ── HOME FEED (logged-in view) ────────────────────────────
-function HomeFeed({ userEmail }: { userEmail: string }) {
-  const firstName = getFirstName(userEmail);
+// ── HOME FEED (logged-in) ─────────────────────────────────
+function HomeFeed() {
+  const { user } = useAuth();
+  const { profile, loading } = useProfile();
+
   const greeting = getGreeting();
-  const nearbyMoms = MOMS.slice(0, 5);
+
+  // Derive display name: profile > email local part
+  const displayName = profile?.display_name
+    ? profile.display_name.split(" ")[0]
+    : (user?.email?.split("@")[0].replace(/[._\-+]/g, " ").split(" ")[0] ?? "Mom");
+  const firstName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
+  const myInterests: string[] = profile?.interests ?? [];
+  const myNeighborhood = profile?.neighborhood ?? null;
+
+  // Sort MOMS: those with shared interests first
+  const sortedMoms = [...MOMS].sort((a, b) => {
+    const sharedA = myInterests.length > 0 ? a.interests.filter(i => myInterests.includes(i)).length : 0;
+    const sharedB = myInterests.length > 0 ? b.interests.filter(i => myInterests.includes(i)).length : 0;
+    return sharedB - sharedA;
+  }).slice(0, 6);
+
   const nudge = NUDGES[0];
+
+  // Derive avatar initials & color from display name
+  const avatarInitials = profile?.display_name ? getInitials(profile.display_name) : firstName.slice(0, 2).toUpperCase();
+  const avatarColor = "hsl(204 80% 62%)";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -91,23 +101,35 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
         <div className="flex items-start justify-between mb-1">
           <div>
             <p className="text-xs font-bold text-primary/70 uppercase tracking-widest mb-0.5">{greeting} 👋</p>
-            <h1 className="font-display font-black text-2xl leading-tight">
-              Hey, {firstName}!
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Your village is waiting</p>
+            <h1 className="font-display font-black text-2xl leading-tight">Hey, {firstName}!</h1>
+            {myNeighborhood ? (
+              <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> {myNeighborhood}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-0.5">Your village is waiting</p>
+            )}
           </div>
-          {/* Notification bell */}
-          <button className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card">
-            <Bell className="h-5 w-5 text-foreground" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">3</span>
-          </button>
+          {/* Avatar + notification bell */}
+          <div className="flex items-center gap-2">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black text-white shadow-soft"
+              style={{ backgroundColor: avatarColor }}
+            >
+              {avatarInitials}
+            </div>
+            <button className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card">
+              <Bell className="h-5 w-5 text-foreground" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">3</span>
+            </button>
+          </div>
         </div>
 
         {/* Quick stats row */}
         <div className="flex gap-2 mt-4">
           {[
             { label: "Connections", value: "8", icon: "👯" },
-            { label: "Playdates", value: "2", icon: "📅" },
+            { label: "Playdates", value: String(UPCOMING_FEED.length), icon: "📅" },
             { label: "Messages", value: "3", icon: "💬" },
           ].map((stat) => (
             <div key={stat.label} className="flex-1 bg-card/70 rounded-2xl px-3 py-2.5 border border-border/60 text-center shadow-card">
@@ -119,8 +141,25 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
         </div>
       </div>
 
+      {/* ── PROFILE COMPLETION NUDGE (if incomplete) ──── */}
+      {!profile?.display_name && (
+        <div className="px-4 pt-4">
+          <Link
+            to="/onboarding"
+            className="flex items-center gap-3 bg-secondary/20 rounded-2xl border border-secondary/40 p-4 active:scale-[0.98] transition-all"
+          >
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg flex-shrink-0">✨</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Complete your profile</p>
+              <p className="text-xs text-muted-foreground">Add your name, neighborhood & interests</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          </Link>
+        </div>
+      )}
+
       {/* ── QUICK-CONNECT NUDGE ───────────────────────── */}
-      <div className="px-4 -mt-1 pt-4">
+      <div className={`px-4 ${!profile?.display_name ? "pt-3" : "-mt-1 pt-4"}`}>
         <Link
           to={nudge.href}
           className="flex items-center gap-3 bg-card rounded-2xl border border-primary/20 p-4 shadow-soft active:scale-[0.98] transition-all"
@@ -143,34 +182,28 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
         <div className="flex items-center justify-between px-4 mb-3">
           <div>
             <h2 className="font-display font-black text-lg">Moms Near You</h2>
-            <p className="text-xs text-muted-foreground">Matched by shared interests</p>
+            <p className="text-xs text-muted-foreground">
+              {myInterests.length > 0 ? "Sorted by shared interests" : "Browse & connect"}
+            </p>
           </div>
           <Link to="/browse" className="text-primary text-sm font-bold flex items-center gap-0.5">
             See all <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
 
-        {/* Horizontal scroll */}
-        <div className="flex gap-3 overflow-x-auto pb-3 -mx-0 px-4 hide-scrollbar">
-          {nearbyMoms.map((mom) => {
-            const sharedInterests = mom.interests.filter(i =>
-              ["Outdoor play", "Arts & Crafts", "Nature walks", "Books & Storytime", "Sensory play"].includes(i)
-            );
+        <div className="flex gap-3 overflow-x-auto pb-3 px-4 hide-scrollbar">
+          {sortedMoms.map((mom) => {
+            const sharedInterests = myInterests.length > 0
+              ? mom.interests.filter(i => myInterests.includes(i))
+              : [];
             return (
               <Link
                 key={mom.id}
                 to={`/mom/${mom.id}`}
                 className="flex-shrink-0 w-40 bg-card rounded-2xl border border-border shadow-card overflow-hidden active:scale-[0.97] transition-all"
               >
-                {/* Avatar header */}
-                <div
-                  className="h-20 flex items-center justify-center relative"
-                  style={{ backgroundColor: mom.avatarColor + "22" }}
-                >
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-soft"
-                    style={{ backgroundColor: mom.avatarColor }}
-                  >
+                <div className="h-20 flex items-center justify-center relative" style={{ backgroundColor: mom.avatarColor + "22" }}>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-soft" style={{ backgroundColor: mom.avatarColor }}>
                     {mom.avatar}
                   </div>
                   {mom.verified && (
@@ -185,32 +218,29 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
                     </div>
                   )}
                 </div>
-
-                {/* Info */}
                 <div className="p-3">
                   <p className="font-display font-black text-xs leading-tight mb-0.5">{mom.name}</p>
                   <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mb-1.5">
                     <MapPin className="h-2.5 w-2.5" />{mom.distance}
                   </p>
-                  {/* Shared interest chips (max 2) */}
                   {sharedInterests.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {sharedInterests.slice(0, 2).map(interest => (
-                        <span
-                          key={interest}
-                          className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full"
-                        >
+                        <span key={interest} className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
                           {INTEREST_ICONS[interest]} {interest.split(" ")[0]}
                         </span>
                       ))}
                     </div>
+                  )}
+                  {sharedInterests.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground">{mom.kids.join(", ")}</p>
                   )}
                 </div>
               </Link>
             );
           })}
 
-          {/* "Browse more" end card */}
+          {/* Browse more end card */}
           <Link
             to="/browse"
             className="flex-shrink-0 w-40 bg-card rounded-2xl border border-dashed border-primary/40 shadow-card flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition-all p-4"
@@ -242,7 +272,6 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
               to="/playdates"
               className="flex items-center gap-4 bg-card rounded-2xl border border-border p-4 shadow-card active:scale-[0.98] transition-all"
             >
-              {/* Date badge */}
               <div className="w-12 h-12 rounded-xl gradient-primary flex flex-col items-center justify-center flex-shrink-0 shadow-soft">
                 <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
                   {pd.date.split(",")[0]}
@@ -251,7 +280,6 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
                   {pd.date.split(" ")[2]}
                 </span>
               </div>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
@@ -260,7 +288,6 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {pd.time} {pd.emoji}
                 </p>
-                {/* Attendee stack */}
                 <div className="flex items-center mt-2">
                   {pd.attendees.map((a, i) => (
                     <div
@@ -274,12 +301,10 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
                   <span className="ml-2 text-[10px] text-muted-foreground font-semibold">{pd.attendees.length} going</span>
                 </div>
               </div>
-
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </Link>
           ))}
 
-          {/* Plan new playdate CTA */}
           <Link
             to="/playdates"
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-bold text-sm active:bg-primary/5 transition-all"
@@ -290,30 +315,27 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
         </div>
       </section>
 
-      {/* ── EXTRA NUDGE ROW ───────────────────────────── */}
+      {/* ── STAY CONNECTED ────────────────────────────── */}
       <section className="px-4 pt-6">
         <h2 className="font-display font-black text-lg mb-3">Stay Connected</h2>
         <div className="space-y-3">
-          {NUDGES.slice(1).map((nudge, i) => (
+          {NUDGES.slice(1).map((n, i) => (
             <Link
               key={i}
-              to={nudge.href}
+              to={n.href}
               className="flex items-center gap-3 bg-card rounded-2xl border border-border p-4 shadow-card active:scale-[0.98] transition-all"
             >
-              <div className="w-9 h-9 rounded-xl bg-secondary/20 flex items-center justify-center text-lg flex-shrink-0">
-                {nudge.emoji}
-              </div>
-              <p className="flex-1 text-sm font-semibold text-foreground">{nudge.text}</p>
+              <div className="w-9 h-9 rounded-xl bg-secondary/20 flex items-center justify-center text-lg flex-shrink-0">{n.emoji}</div>
+              <p className="flex-1 text-sm font-semibold text-foreground">{n.text}</p>
               <div className="flex items-center gap-1 text-primary font-bold text-xs flex-shrink-0">
-                {nudge.cta}
-                <ChevronRight className="h-3.5 w-3.5" />
+                {n.cta} <ChevronRight className="h-3.5 w-3.5" />
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ── COMPLETE YOUR PROFILE BANNER ──────────────── */}
+      {/* ── PROFILE TIP BANNER ────────────────────────── */}
       <section className="mx-4 mt-6 mb-2 rounded-3xl bg-card border border-border shadow-card overflow-hidden">
         <div className="gradient-hero px-5 py-4">
           <div className="flex items-center gap-2 mb-2">
@@ -330,16 +352,14 @@ function HomeFeed({ userEmail }: { userEmail: string }) {
           </Link>
         </div>
       </section>
-
     </div>
   );
 }
 
-// ── MARKETING PAGE (logged-out view) ────────────────────
+// ── MARKETING PAGE (logged-out) ──────────────────────────
 function MarketingPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* ── HERO ─────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="relative h-72 md:h-96">
           <img src={heroImage} alt="Moms at the park" className="w-full h-full object-cover" />
@@ -351,45 +371,27 @@ function MarketingPage() {
             Mom friends are just a click away
           </div>
           <h1 className="font-display text-4xl font-black leading-tight mb-3">
-            Make mom friends.<br />
-            <span className="text-primary">Build your village.</span>
+            Make mom friends.<br /><span className="text-primary">Build your village.</span>
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed mb-6">
             Connect with moms in your neighborhood based on your kids' ages, shared interests, and schedule.
           </p>
           <div className="flex flex-col gap-3">
-            <Link
-              to="/signup"
-              className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
-            >
-              Get Started — It's Free
-              <ArrowRight className="h-4 w-4" />
+            <Link to="/signup" className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all">
+              Get Started — It's Free <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              to="/login"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-primary text-primary font-bold text-base active:scale-[0.98] transition-all"
-            >
+            <Link to="/login" className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-primary text-primary font-bold text-base active:scale-[0.98] transition-all">
               Sign In
             </Link>
           </div>
           <div className="flex items-center justify-around mt-6 pt-5 border-t border-border">
-            <div className="flex flex-col items-center gap-1">
-              <Shield className="h-5 w-5 text-primary" />
-              <span className="text-xs font-bold">ID-verified</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Users className="h-5 w-5 text-coral" />
-              <span className="text-xs font-bold">12,000+ moms</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Star className="h-5 w-5 text-secondary" fill="currentColor" />
-              <span className="text-xs font-bold">4.9 rating</span>
-            </div>
+            <div className="flex flex-col items-center gap-1"><Shield className="h-5 w-5 text-primary" /><span className="text-xs font-bold">ID-verified</span></div>
+            <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-coral" /><span className="text-xs font-bold">12,000+ moms</span></div>
+            <div className="flex flex-col items-center gap-1"><Star className="h-5 w-5 text-secondary" fill="currentColor" /><span className="text-xs font-bold">4.9 rating</span></div>
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ─────────────────────────────── */}
       <section className="px-4 py-6">
         <h2 className="font-display font-black text-lg mb-4">How It Works</h2>
         <div className="space-y-3">
@@ -397,9 +399,7 @@ function MarketingPage() {
             <div key={i} className="flex items-start gap-4 bg-card rounded-2xl p-4 border border-border shadow-card">
               <div className="text-2xl flex-shrink-0">{step.icon}</div>
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-black uppercase tracking-widest mb-0.5" style={{ color: step.color }}>
-                  Step {i + 1}
-                </div>
+                <div className="text-[10px] font-black uppercase tracking-widest mb-0.5" style={{ color: step.color }}>Step {i + 1}</div>
                 <h3 className="font-display font-bold text-sm mb-0.5">{step.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
               </div>
@@ -408,15 +408,9 @@ function MarketingPage() {
         </div>
       </section>
 
-      {/* ── SAFETY ───────────────────────────────────── */}
       <section className="mx-4 my-4 rounded-3xl gradient-hero border border-border p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Shield className="h-5 w-5 text-primary" />
-          <h2 className="font-display font-black text-lg">Safety First</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-          MomCircle is built with safety as its foundation.
-        </p>
+        <div className="flex items-center gap-2 mb-3"><Shield className="h-5 w-5 text-primary" /><h2 className="font-display font-black text-lg">Safety First</h2></div>
+        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">MomCircle is built with safety as its foundation.</p>
         <div className="space-y-2.5">
           {safetyFeatures.map((f) => (
             <div key={f} className="flex items-center gap-3">
@@ -427,22 +421,15 @@ function MarketingPage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ─────────────────────────────── */}
       <section className="px-4 py-4">
         <h2 className="font-display font-black text-lg mb-4">Moms Love MomCircle</h2>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
           {testimonials.map((t) => (
             <div key={t.name} className="flex-shrink-0 w-72 bg-card rounded-2xl p-5 border border-border shadow-card">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 text-secondary" fill="currentColor" />
-                ))}
-              </div>
+              <div className="flex gap-0.5 mb-3">{[...Array(5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 text-secondary" fill="currentColor" />)}</div>
               <p className="text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: t.color }}>
-                  {t.avatar}
-                </div>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: t.color }}>{t.avatar}</div>
                 <div>
                   <p className="font-bold text-xs">{t.name}</p>
                   <p className="text-[10px] text-muted-foreground">{t.kids} · {t.neighborhood}</p>
@@ -453,23 +440,16 @@ function MarketingPage() {
         </div>
       </section>
 
-      {/* ── PREMIUM BANNER ───────────────────────────── */}
       <section className="mx-4 my-4 rounded-3xl gradient-banner text-white p-6">
         <div className="mb-1 text-sm font-bold opacity-80">MomCircle Premium</div>
         <h2 className="font-display font-black text-2xl mb-2">Grow your village faster</h2>
         <p className="text-sm opacity-80 mb-5">Unlimited connections, advanced filters, verified badge & more.</p>
         <div className="flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-black">$9</span>
-            <span className="text-sm opacity-70">/month</span>
-          </div>
-          <button className="px-5 py-2.5 rounded-xl bg-white text-primary font-bold text-sm active:scale-[0.97] transition-all">
-            Try Free 7 Days
-          </button>
+          <div><span className="text-2xl font-black">$9</span><span className="text-sm opacity-70">/month</span></div>
+          <button className="px-5 py-2.5 rounded-xl bg-white text-primary font-bold text-sm active:scale-[0.97] transition-all">Try Free 7 Days</button>
         </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────── */}
       <footer className="px-4 py-6 text-center">
         <div className="font-display font-black text-base text-primary mb-1">MomCircle</div>
         <p className="text-xs text-muted-foreground">© 2025 · Building villages, one playdate at a time 🛝</p>
@@ -483,13 +463,8 @@ function MarketingPage() {
   );
 }
 
-// ── ROOT ─────────────────────────────────────────────────
+// ── ROOT ──────────────────────────────────────────────────
 export default function Index() {
   const { user } = useAuth();
-
-  if (user) {
-    return <HomeFeed userEmail={user.email ?? "mom"} />;
-  }
-
-  return <MarketingPage />;
+  return user ? <HomeFeed /> : <MarketingPage />;
 }
