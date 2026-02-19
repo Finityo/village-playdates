@@ -70,6 +70,68 @@ export type Database = {
           },
         ]
       }
+      playdate_rsvps: {
+        Row: {
+          created_at: string
+          id: string
+          playdate_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          playdate_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          playdate_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playdate_rsvps_playdate_id_fkey"
+            columns: ["playdate_id"]
+            isOneToOne: false
+            referencedRelation: "playdates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playdates: {
+        Row: {
+          created_at: string
+          creator_id: string
+          date: string
+          description: string
+          id: string
+          park: string
+          time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          date: string
+          description?: string
+          id?: string
+          park: string
+          time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          date?: string
+          description?: string
+          id?: string
+          park?: string
+          time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
