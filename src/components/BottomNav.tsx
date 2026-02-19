@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Calendar, MessageCircle, Map } from "lucide-react";
+import { Home, Search, Calendar, MessageCircle, Map, UserCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,11 +46,12 @@ export default function BottomNav() {
     { label: "Playdates", icon: Calendar, href: "/playdates" },
     { label: "Map", icon: Map, href: "/map" },
     { label: "Messages", icon: MessageCircle, href: "/messages" },
+    { label: "Profile", icon: UserCircle, href: "/profile" },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around px-2 h-16">
+      <div className="flex items-center justify-around px-1 h-16">
         {tabs.map(({ label, icon: Icon, href }) => {
           const active = location.pathname === href ||
             (href === "/browse" && location.pathname.startsWith("/mom"));
@@ -61,17 +62,17 @@ export default function BottomNav() {
               key={href}
               to={href}
               onClick={() => { if (label === "Home") setNewMomBadge(false); }}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <div className={`relative p-1.5 rounded-xl transition-all ${active ? "bg-primary/10" : ""}`}>
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 1.8} />
+              <div className={`relative p-1 rounded-xl transition-all ${active ? "bg-primary/10" : ""}`}>
+                <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.5 : 1.8} />
                 {showBadge && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-coral border border-background animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-coral border border-background animate-pulse" />
                 )}
               </div>
-              <span className={`text-[10px] font-bold ${active ? "text-primary" : "text-muted-foreground"}`}>
+              <span className={`text-[9px] font-bold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
                 {label}
               </span>
             </Link>

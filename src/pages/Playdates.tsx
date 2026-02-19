@@ -6,8 +6,16 @@ import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { useSearchParams } from "react-router-dom";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 // ── TYPES ────────────────────────────────────────────────
+interface AttendeeProfile {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
 interface Playdate {
   id: string;
   creator_id: string;
@@ -17,6 +25,7 @@ interface Playdate {
   description: string;
   created_at: string;
   rsvps: { user_id: string }[];
+  attendees?: AttendeeProfile[];
 }
 
 const PARKS = [
@@ -29,26 +38,49 @@ const PARKS = [
 const TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"];
 
 // ── ATTENDEE STACK ───────────────────────────────────────
-function AttendeeStack({ count }: { count: number }) {
-  const colors = ["hsl(142 38% 40%)", "hsl(204 80% 62%)", "hsl(42 90% 60%)", "hsl(12 82% 65%)"];
+function AttendeeStack({ count, attendees }: { count: number; attendees?: AttendeeProfile[] }) {
   const shown = Math.min(count, 3);
+  const colors = ["hsl(142 38% 40%)", "hsl(204 80% 62%)", "hsl(42 90% 60%)", "hsl(12 82% 65%)"];
+
   return (
     <div className="flex items-center">
-      {Array.from({ length: shown }).map((_, i) => (
-        <div
-          key={i}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 border-card"
-          style={{ backgroundColor: colors[i % colors.length], marginLeft: i > 0 ? "-8px" : 0, zIndex: shown - i }}
-        >
-          {"?"}
-        </div>
-      ))}
+      {Array.from({ length: shown }).map((_, i) => {
+        const attendee = attendees?.[i];
+        return (
+          <div
+            key={i}
+            className="w-7 h-7 rounded-full border-2 border-card overflow-hidden flex-shrink-0"
+            style={{ marginLeft: i > 0 ? "-8px" : 0, zIndex: shown - i, position: "relative" }}
+          >
+            {attendee?.avatar_url ? (
+              <img
+                src={attendee.avatar_url}
+                alt={attendee.display_name ?? "Attendee"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center text-[10px] font-black text-white"
+                style={{ backgroundColor: colors[i % colors.length] }}
+              >
+                {attendee?.display_name?.[0]?.toUpperCase() ?? "?"}
+              </div>
+            )}
+          </div>
+        );
+      })}
       {count > 3 && (
         <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold border-2 border-card -ml-2">
           +{count - 3}
         </div>
       )}
       <span className="ml-2 text-xs text-muted-foreground">{count} going</span>
+      {attendees && attendees.length > 0 && (
+        <span className="ml-1 text-xs text-muted-foreground truncate max-w-[110px]">
+          · {attendees[0].display_name ?? "A mom"}
+          {attendees.length > 1 ? ` & ${attendees.length - 1} more` : ""}
+        </span>
+      )}
     </div>
   );
 }
@@ -74,12 +106,11 @@ function PlaydateCard({
             <MapPin className="h-4 w-4 text-primary" />
             <span className="font-display font-black text-sm">{pd.park}</span>
           </div>
-          {isGoing && (
+          {isGoing ? (
             <span className="text-[10px] font-black uppercase tracking-wide bg-primary text-white px-2 py-0.5 rounded-full flex items-center gap-1">
               <CheckCircle2 className="h-2.5 w-2.5" /> Going
             </span>
-          )}
-          {!isGoing && (
+          ) : (
             <span className="text-[10px] font-black uppercase tracking-wide bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
               Upcoming
             </span>
@@ -98,8 +129,8 @@ function PlaydateCard({
             <span>{pd.time}</span>
           </div>
         </div>
-        <AttendeeStack count={pd.rsvps.length} />
-        {!isOwn && (
+        <AttendeeStack count={pd.rsvps.length} attendees={pd.attendees} />
+        {!isOwn ? (
           <button
             onClick={() => onRsvp(pd)}
             className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${
@@ -110,8 +141,7 @@ function PlaydateCard({
           >
             {isGoing ? "Cancel RSVP" : "Join Playdate 🎉"}
           </button>
-        )}
-        {isOwn && (
+        ) : (
           <div className="text-center text-xs text-muted-foreground font-semibold py-1">
             You're hosting this playdate 🌟
           </div>
@@ -125,12 +155,14 @@ function PlaydateCard({
 function PlanSheet({
   onClose,
   onConfirm,
+  initialPark,
 }: {
   onClose: () => void;
   onConfirm: (park: string, date: string, time: string, description: string) => Promise<void>;
+  initialPark?: string;
 }) {
-  const [step, setStep] = useState(0);
-  const [selectedPark, setSelectedPark] = useState("");
+  const [step, setStep] = useState(initialPark ? 1 : 0);
+  const [selectedPark, setSelectedPark] = useState(initialPark ?? "");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState("");
   const [description, setDescription] = useState("");
@@ -139,7 +171,7 @@ function PlanSheet({
   const canNext = [
     selectedPark !== "",
     selectedDate !== undefined && selectedTime !== "",
-    true, // description is optional
+    true,
   ];
 
   const steps = ["Pick a Park", "Date & Time", "Description"];
@@ -210,6 +242,18 @@ function PlanSheet({
           {/* Step 1: Date & Time */}
           {step === 1 && (
             <div className="pb-4 space-y-5">
+              {initialPark && step === 1 && (
+                <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2.5">
+                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-sm font-bold text-primary">{selectedPark}</span>
+                  <button
+                    onClick={() => { setStep(0); }}
+                    className="ml-auto text-xs text-muted-foreground underline"
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
               <div>
                 <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">📅 Pick a Date</p>
                 <div className="flex justify-center">
@@ -304,9 +348,21 @@ export default function Playdates() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { schedulePlaydateReminder, notifyRsvp } = useNotifications();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [playdates, setPlaydates] = useState<Playdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPlan, setShowPlan] = useState(false);
+  const [initialPark, setInitialPark] = useState<string | undefined>(undefined);
+
+  // Auto-open sheet if a park was passed via URL query param
+  useEffect(() => {
+    const park = searchParams.get("park");
+    if (park) {
+      setInitialPark(park);
+      setShowPlan(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchPlaydates = useCallback(async () => {
     const { data, error } = await supabase
@@ -315,7 +371,24 @@ export default function Playdates() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setPlaydates(data as Playdate[]);
+      // Fetch attendee profiles for each playdate
+      const enriched = await Promise.all(
+        (data as Playdate[]).map(async (pd) => {
+          if (!pd.rsvps.length) return { ...pd, attendees: [] };
+          const userIds = pd.rsvps.map((r) => r.user_id);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, display_name, avatar_url")
+            .in("id", userIds);
+          const attendees: AttendeeProfile[] = (profiles ?? []).map((p) => ({
+            user_id: p.id,
+            display_name: p.display_name,
+            avatar_url: p.avatar_url,
+          }));
+          return { ...pd, attendees };
+        })
+      );
+      setPlaydates(enriched);
     }
     setLoading(false);
   }, []);
@@ -330,11 +403,9 @@ export default function Playdates() {
       .channel("playdates-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "playdates" }, fetchPlaydates)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "playdate_rsvps" }, async (payload) => {
-        // Notify the playdate creator when someone RSVPs to their playdate
         if (!user) return;
         const rsvpUserId = (payload.new as { user_id: string }).user_id;
         const playdateId = (payload.new as { playdate_id: string }).playdate_id;
-        // Find if this RSVP is for one of my playdates
         const myPlaydate = playdates.find(
           (pd) => pd.id === playdateId && pd.creator_id === user.id && rsvpUserId !== user.id
         );
@@ -437,7 +508,7 @@ export default function Playdates() {
       )}
 
       <button
-        onClick={() => setShowPlan(true)}
+        onClick={() => { setInitialPark(undefined); setShowPlan(true); }}
         className="fixed bottom-24 right-5 z-40 flex items-center gap-2 px-5 py-3.5 rounded-2xl gradient-primary text-white font-bold text-sm shadow-floating active:scale-[0.96] transition-all"
       >
         <Plus className="h-5 w-5" />
@@ -448,6 +519,7 @@ export default function Playdates() {
         <PlanSheet
           onClose={() => setShowPlan(false)}
           onConfirm={handleCreate}
+          initialPark={initialPark}
         />
       )}
     </div>
