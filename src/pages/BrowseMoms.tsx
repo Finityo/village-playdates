@@ -14,17 +14,22 @@ const INTEREST_OPTIONS = [
   "Hiking", "Yoga & Wellness", "Science & STEM", "Water play", "Museums", "Montessori",
 ];
 const INTEREST_CHIP_OPTIONS = ["All", "Outdoor play", "Arts & Crafts", "Montessori", "Nature walks", "Sports & Active play", "Science & STEM", "Music & Dance"];
+const NEIGHBORHOOD_OPTIONS = [
+  "Riverside Park", "Sunfield District", "Maplewood Heights", "Cedarwood Commons",
+  "Green Valley", "Harbor View",
+];
 
 interface Filters {
   distance: string;
   ageGroups: string[];
   interests: string[];
+  neighborhoods: string[];
 }
 
-const DEFAULT_FILTERS: Filters = { distance: "", ageGroups: [], interests: [] };
+const DEFAULT_FILTERS: Filters = { distance: "", ageGroups: [], interests: [], neighborhoods: [] };
 
 function countActiveFilters(f: Filters) {
-  return (f.distance ? 1 : 0) + f.ageGroups.length + f.interests.length;
+  return (f.distance ? 1 : 0) + f.ageGroups.length + f.interests.length + f.neighborhoods.length;
 }
 
 function distanceToMiles(d: string): number {
@@ -63,6 +68,7 @@ export default function BrowseMoms() {
         distance: "",
         ageGroups: profileKidsAges,
         interests: profileInterests,
+        neighborhoods: [],
       };
       setFilters(preloaded);
       setPendingFilters(preloaded);
@@ -113,6 +119,14 @@ export default function BrowseMoms() {
         : [...prev.interests, i],
     }));
 
+  const togglePendingNeighborhood = (n: string) =>
+    setPendingFilters((prev) => ({
+      ...prev,
+      neighborhoods: prev.neighborhoods.includes(n)
+        ? prev.neighborhoods.filter((x) => x !== n)
+        : [...prev.neighborhoods, n],
+    }));
+
   const filtered = moms.filter((m) => {
     const matchesSearch =
       !searchQuery ||
@@ -135,7 +149,11 @@ export default function BrowseMoms() {
       filters.interests.length === 0 ||
       filters.interests.some((fi) => m.interests.includes(fi));
 
-    return matchesSearch && matchesInterestChip && matchesDistance && matchesAgeGroups && matchesInterests;
+    const matchesNeighborhoods =
+      filters.neighborhoods.length === 0 ||
+      filters.neighborhoods.some((n) => m.neighborhood.toLowerCase().includes(n.toLowerCase()));
+
+    return matchesSearch && matchesInterestChip && matchesDistance && matchesAgeGroups && matchesInterests && matchesNeighborhoods;
   });
 
   return (
@@ -321,6 +339,32 @@ export default function BrowseMoms() {
                 </div>
               </section>
 
+              {/* Neighborhood */}
+              <section>
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">
+                  🏘️ Neighborhood
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {NEIGHBORHOOD_OPTIONS.map((n) => {
+                    const active = pendingFilters.neighborhoods.includes(n);
+                    return (
+                      <button
+                        key={n}
+                        onClick={() => togglePendingNeighborhood(n)}
+                        className={`px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all active:scale-[0.97] ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-card text-foreground"
+                        }`}
+                      >
+                        {active && <span className="mr-1">✓</span>}
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
               {/* Shared Interests */}
               <section>
                 <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">
@@ -347,6 +391,7 @@ export default function BrowseMoms() {
                   })}
                 </div>
               </section>
+
 
             </div>
 
