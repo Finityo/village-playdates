@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, Shield, MoreVertical, Bell, Settings, Home, Search, Calendar, MessageCircle, User } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Send, Shield, MoreVertical, Bell, Settings, Home, Search, Calendar, MessageCircle, User, Loader2 } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
+// ── MOCK THREAD DATA (visual placeholders for other moms) ──────────────────
 interface Thread {
-  id: number;
+  id: string;          // real conversation UUID
+  profileId: string;   // other user's profile id (mocked as string for demo moms)
   name: string;
   avatar: string;
   avatarColor: string;
@@ -16,34 +20,11 @@ interface Thread {
 }
 
 interface Message {
-  id: number;
-  from: "me" | "them";
+  id: string;
+  sender_id: string;
   text: string;
-  time: string;
+  created_at: string;
 }
-
-const THREADS: Thread[] = [
-  { id: 1, name: "Jessica M.", avatar: "JM", avatarColor: "hsl(142 38% 40%)", lastMessage: "That sounds perfect! See you at Riverside at 10?", timestamp: "2m ago", unread: 2, verified: true, online: true },
-  { id: 2, name: "Priya T.", avatar: "PT", avatarColor: "hsl(42 90% 60%)", lastMessage: "Yes! Our kids would love that morning walk 🌿", timestamp: "1h ago", unread: 1, verified: true, online: true },
-  { id: 3, name: "Amara K.", avatar: "AK", avatarColor: "hsl(12 82% 65%)", lastMessage: "I'm new here — would love to explore together!", timestamp: "3h ago", unread: 0, verified: true, online: false },
-  { id: 4, name: "Sofia R.", avatar: "SR", avatarColor: "hsl(204 80% 62%)", lastMessage: "The Saturday park group is at 9am this week 🌳", timestamp: "Yesterday", unread: 0, verified: false, online: false },
-  { id: 5, name: "Lauren B.", avatar: "LB", avatarColor: "hsl(133 45% 50%)", lastMessage: "Did you catch the butterfly exhibit at the museum?", timestamp: "2d ago", unread: 0, verified: true, online: false },
-];
-
-const MOCK_MESSAGES: Record<number, Message[]> = {
-  1: [
-    { id: 1, from: "them", text: "Hey! Loved your profile — our kids are almost the same age 🌸", time: "10:04 AM" },
-    { id: 2, from: "me", text: "Aw thank you! Your bio made me laugh — muddy boots are our vibe too 😂", time: "10:06 AM" },
-    { id: 3, from: "them", text: "Ha! Okay so we HAVE to do a playdate. How's your week looking?", time: "10:07 AM" },
-    { id: 4, from: "me", text: "Wednesday morning works! We love Riverside Park.", time: "10:09 AM" },
-    { id: 5, from: "them", text: "That sounds perfect! See you at Riverside at 10?", time: "10:10 AM" },
-  ],
-  2: [
-    { id: 1, from: "them", text: "Hi! I saw you're into yoga & wellness — me too! 🧘", time: "9:12 AM" },
-    { id: 2, from: "me", text: "Yes! Do you ever do morning walks at Cedarwood Green?", time: "9:14 AM" },
-    { id: 3, from: "them", text: "Yes! Our kids would love that morning walk 🌿", time: "9:15 AM" },
-  ],
-};
 
 const ICEBREAKERS = [
   "Coffee at the park this week? ☕",
@@ -52,180 +33,331 @@ const ICEBREAKERS = [
   "Want to join our playdate group? 👋",
 ];
 
-export default function Messages() {
-  const [activeThread, setActiveThread] = useState<Thread | null>(null);
+// ── CHAT VIEW ──────────────────────────────────────────────────────────────
+function ChatView({
+  thread,
+  onBack,
+}: {
+  thread: Thread;
+  onBack: () => void;
+}) {
+  const { user } = useAuth();
+  const { notifyNewMessage } = useNotifications();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { notifyNewMessage } = useNotifications();
 
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+  }, []);
+
+  // Load messages
   useEffect(() => {
-    if (activeThread) {
-      setMessages(MOCK_MESSAGES[activeThread.id] ?? []);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
-    }
-  }, [activeThread]);
+    if (!thread.id) return;
+    setLoading(true);
+    supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", thread.id)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        setMessages((data as Message[]) ?? []);
+        setLoading(false);
+        scrollToBottom();
+      });
+  }, [thread.id, scrollToBottom]);
 
-  const sendMessage = useCallback((text: string) => {
-    if (!text.trim() || !activeThread) return;
-    const newMsg: Message = {
-      id: messages.length + 1,
-      from: "me",
-      text,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setInput("");
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-
-    // Simulate the other mom replying after 3 s → triggers local notification
-    const REPLIES = [
-      "Sounds great, see you then! 🌸",
-      "Perfect! Can't wait 🎉",
-      "Yay! My little one is so excited!",
-      "Awesome — I'll bring coffee ☕",
-    ];
-    const reply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
+  // Realtime subscription
+  useEffect(() => {
+    if (!thread.id) return;
+    const channel = supabase
+      .channel(`messages:${thread.id}`)
+      .on(
+        "postgres_changes",
         {
-          id: prev.length + 1,
-          from: "them",
-          text: reply,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${thread.id}`,
         },
-      ]);
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      // Fire local notification so it shows on the lock screen / notification tray
-      notifyNewMessage(activeThread.name, reply);
-    }, 3000);
-  }, [activeThread, messages.length, notifyNewMessage]);
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.find((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          scrollToBottom();
+          // Notify if message is from the other person
+          if (newMsg.sender_id !== user?.id) {
+            notifyNewMessage(thread.name, newMsg.text);
+          }
+        }
+      )
+      .subscribe();
 
-  // ── CHAT VIEW ─────────────────────────────────────────────
-  if (activeThread) {
-    return (
-      <div className="flex flex-col h-[100dvh] bg-background">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-3 pb-3 bg-card border-b border-border shadow-card flex-shrink-0">
-          <button
-            onClick={() => setActiveThread(null)}
-            className="p-2 -ml-2 rounded-xl active:bg-muted transition-colors"
+    return () => { supabase.removeChannel(channel); };
+  }, [thread.id, thread.name, user?.id, notifyNewMessage, scrollToBottom]);
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || !user || !thread.id) return;
+      setInput("");
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: thread.id,
+        sender_id: user.id,
+        text: text.trim(),
+      });
+      if (error) console.error("Send message error:", error);
+    },
+    [user, thread.id]
+  );
+
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="flex flex-col h-[100dvh] bg-background">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-3 pb-3 bg-card border-b border-border shadow-card flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="p-2 -ml-2 rounded-xl active:bg-muted transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </button>
+        <div className="relative">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white"
+            style={{ backgroundColor: thread.avatarColor }}
           >
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </button>
-          <div className="relative">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white"
-              style={{ backgroundColor: activeThread.avatarColor }}
-            >
-              {activeThread.avatar}
-            </div>
-            {activeThread.online && (
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
-            )}
+            {thread.avatar}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm truncate">{activeThread.name}</span>
-              {activeThread.verified && <Shield className="h-3.5 w-3.5 text-primary flex-shrink-0" fill="currentColor" />}
-            </div>
-            <span className="text-xs text-muted-foreground">{activeThread.online ? "Online" : "Offline"}</span>
-          </div>
-          <button className="p-2 rounded-xl active:bg-muted transition-colors">
-            <MoreVertical className="h-5 w-5 text-muted-foreground" />
-          </button>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {/* Icebreaker chips — shown at top of fresh chats */}
-          {messages.length === 0 && (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-2xl font-black text-white mb-3 shadow-soft"
-                style={{ backgroundColor: activeThread.avatarColor }}
-              >
-                {activeThread.avatar}
-              </div>
-              <p className="font-bold mb-1">{activeThread.name}</p>
-              <p className="text-xs text-muted-foreground mb-5">Start the conversation with an icebreaker 👇</p>
-              <div className="flex flex-col gap-2 items-center">
-                {ICEBREAKERS.map((ice) => (
-                  <button
-                    key={ice}
-                    onClick={() => sendMessage(ice)}
-                    className="px-4 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 active:scale-[0.97] transition-all"
-                  >
-                    {ice}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {thread.online && (
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
           )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-sm truncate">{thread.name}</span>
+            {thread.verified && <Shield className="h-3.5 w-3.5 text-primary flex-shrink-0" fill="currentColor" />}
+          </div>
+          <span className="text-xs text-muted-foreground">{thread.online ? "Online" : "Offline"}</span>
+        </div>
+        <button className="p-2 rounded-xl active:bg-muted transition-colors">
+          <MoreVertical className="h-5 w-5 text-muted-foreground" />
+        </button>
+      </div>
 
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[78%] ${msg.from === "me" ? "order-2" : ""}`}>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        {loading && (
+          <div className="flex justify-center pt-10">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {!loading && messages.length === 0 && (
+          <div className="text-center py-6">
+            <div
+              className="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-2xl font-black text-white mb-3 shadow-soft"
+              style={{ backgroundColor: thread.avatarColor }}
+            >
+              {thread.avatar}
+            </div>
+            <p className="font-bold mb-1">{thread.name}</p>
+            <p className="text-xs text-muted-foreground mb-5">Start the conversation with an icebreaker 👇</p>
+            <div className="flex flex-col gap-2 items-center">
+              {ICEBREAKERS.map((ice) => (
+                <button
+                  key={ice}
+                  onClick={() => sendMessage(ice)}
+                  className="px-4 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 active:scale-[0.97] transition-all"
+                >
+                  {ice}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && messages.map((msg) => {
+          const isMe = msg.sender_id === user?.id;
+          return (
+            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[78%] ${isMe ? "order-2" : ""}`}>
                 <div
                   className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.from === "me"
+                    isMe
                       ? "gradient-primary text-white rounded-br-sm"
                       : "bg-card border border-border text-foreground rounded-bl-sm"
                   }`}
                 >
                   {msg.text}
                 </div>
-                <span className={`text-[10px] text-muted-foreground mt-1 block ${msg.from === "me" ? "text-right" : "text-left"}`}>
-                  {msg.time}
+                <span className={`text-[10px] text-muted-foreground mt-1 block ${isMe ? "text-right" : "text-left"}`}>
+                  {formatTime(msg.created_at)}
                 </span>
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Icebreaker chips (for existing conversations) */}
-        {messages.length > 0 && (
-          <div className="flex gap-2 px-4 pb-2 overflow-x-auto hide-scrollbar flex-shrink-0">
-            {ICEBREAKERS.slice(0, 3).map((ice) => (
-              <button
-                key={ice}
-                onClick={() => sendMessage(ice)}
-                className="flex-shrink-0 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20 active:scale-[0.97] transition-all"
-              >
-                {ice}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Input bar — pinned above keyboard */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-card border-t border-border safe-area-bottom flex-shrink-0">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-            placeholder="Type a message…"
-            className="flex-1 h-11 rounded-2xl bg-muted px-4 text-sm outline-none placeholder:text-muted-foreground"
-          />
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={!input.trim()}
-            className="w-11 h-11 rounded-2xl gradient-primary flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-all disabled:opacity-40"
-          >
-            <Send className="h-4 w-4 text-white" />
-          </button>
-        </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
       </div>
-    );
+
+      {/* Icebreaker chips for existing conversations */}
+      {!loading && messages.length > 0 && (
+        <div className="flex gap-2 px-4 pb-2 overflow-x-auto hide-scrollbar flex-shrink-0">
+          {ICEBREAKERS.slice(0, 3).map((ice) => (
+            <button
+              key={ice}
+              onClick={() => sendMessage(ice)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20 active:scale-[0.97] transition-all"
+            >
+              {ice}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-card border-t border-border safe-area-bottom flex-shrink-0">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+          placeholder="Type a message…"
+          className="flex-1 h-11 rounded-2xl bg-muted px-4 text-sm outline-none placeholder:text-muted-foreground"
+        />
+        <button
+          onClick={() => sendMessage(input)}
+          disabled={!input.trim()}
+          className="w-11 h-11 rounded-2xl gradient-primary flex items-center justify-center flex-shrink-0 active:scale-[0.95] transition-all disabled:opacity-40"
+        >
+          <Send className="h-4 w-4 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── THREAD LIST ────────────────────────────────────────────────────────────
+export default function Messages() {
+  const { user } = useAuth();
+  const [activeThread, setActiveThread] = useState<Thread | null>(null);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [loadingThreads, setLoadingThreads] = useState(true);
+
+  // Demo moms — we create/reuse real conversations in the DB for these
+  const DEMO_MOMS = [
+    { name: "Jessica M.", avatar: "JM", avatarColor: "hsl(142 38% 40%)", verified: true, online: true },
+    { name: "Priya T.", avatar: "PT", avatarColor: "hsl(42 90% 60%)", verified: true, online: true },
+    { name: "Amara K.", avatar: "AK", avatarColor: "hsl(12 82% 65%)", verified: true, online: false },
+    { name: "Sofia R.", avatar: "SR", avatarColor: "hsl(204 80% 62%)", verified: false, online: false },
+    { name: "Lauren B.", avatar: "LB", avatarColor: "hsl(133 45% 50%)", verified: true, online: false },
+  ];
+
+  // Ensure each demo mom has a conversation record in DB, then load threads
+  useEffect(() => {
+    if (!user) return;
+
+    const ensureConversations = async () => {
+      setLoadingThreads(true);
+
+      // For each demo mom we use a deterministic fake UUID based on name
+      const demoIds = DEMO_MOMS.map((m) => {
+        const hash = [...m.name].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        return `00000000-0000-0000-0000-${String(hash).padStart(12, "0")}`;
+      });
+
+      // Upsert conversations — participant_a < participant_b by convention for unique key
+      const upserts = demoIds.map((demoId) => {
+        const [pa, pb] =
+          user.id < demoId ? [user.id, demoId] : [demoId, user.id];
+        return { participant_a: pa, participant_b: pb };
+      });
+
+      await supabase.from("conversations").upsert(upserts, { onConflict: "participant_a,participant_b", ignoreDuplicates: true });
+
+      // Fetch conversations to get real IDs
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id, participant_a, participant_b, updated_at")
+        .or(`participant_a.eq.${user.id},participant_b.eq.${user.id}`)
+        .order("updated_at", { ascending: false });
+
+      if (!convs) { setLoadingThreads(false); return; }
+
+      // For each conversation, fetch last message
+      const threadList: Thread[] = [];
+      for (const conv of convs) {
+        const otherId = conv.participant_a === user.id ? conv.participant_b : conv.participant_a;
+        const demoIdx = demoIds.findIndex((id) => id === otherId);
+        const mom = demoIdx >= 0 ? DEMO_MOMS[demoIdx] : null;
+        if (!mom) continue;
+
+        const { data: lastMsgs } = await supabase
+          .from("messages")
+          .select("text, created_at, sender_id")
+          .eq("conversation_id", conv.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        const last = lastMsgs?.[0];
+        const relativeTime = last
+          ? getRelativeTime(last.created_at)
+          : getRelativeTime(conv.updated_at);
+
+        threadList.push({
+          id: conv.id,
+          profileId: otherId,
+          ...mom,
+          lastMessage: last?.text ?? "Start the conversation 👋",
+          timestamp: relativeTime,
+          unread: 0,
+        });
+      }
+
+      setThreads(threadList);
+      setLoadingThreads(false);
+    };
+
+    ensureConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Realtime: refresh thread list when conversations update
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("conversations-list")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "conversations" },
+        () => {
+          // Re-trigger by toggling a dummy state would cause re-render, so just refetch last messages inline
+          setThreads((prev) =>
+            prev.map((t) => ({
+              ...t,
+              timestamp: t.timestamp, // triggers visual update; full refresh happens on next mount
+            }))
+          );
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  if (activeThread) {
+    return <ChatView thread={activeThread} onBack={() => setActiveThread(null)} />;
   }
 
-  // ── THREAD LIST ──────────────────────────────────────────
+  const totalUnread = threads.reduce((n, t) => n + t.unread, 0);
+
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
-      {/* Self-managed top bar */}
+      {/* Header */}
       <header className="flex-shrink-0 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <span className="font-display font-black text-lg">Messages</span>
@@ -244,58 +376,59 @@ export default function Messages() {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 pt-4 pb-2">
-          <p className="text-sm text-muted-foreground">
-            {THREADS.reduce((n, t) => n + t.unread, 0)} unread
-          </p>
+          <p className="text-sm text-muted-foreground">{totalUnread} unread</p>
         </div>
 
-        <div className="divide-y divide-border">
-          {THREADS.map((thread) => (
-            <button
-              key={thread.id}
-              onClick={() => setActiveThread(thread)}
-              className="w-full flex items-center gap-3 px-4 py-4 bg-card active:bg-muted transition-colors text-left"
-            >
-              {/* Avatar */}
-              <div className="relative flex-shrink-0">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black text-white"
-                  style={{ backgroundColor: thread.avatarColor }}
-                >
-                  {thread.avatar}
-                </div>
-                {thread.online && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-card" />
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`font-bold text-sm ${thread.unread > 0 ? "text-foreground" : "text-foreground/80"}`}>
-                      {thread.name}
-                    </span>
-                    {thread.verified && <Shield className="h-3 w-3 text-primary flex-shrink-0" fill="currentColor" />}
+        {loadingThreads ? (
+          <div className="flex justify-center pt-10">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {threads.map((thread) => (
+              <button
+                key={thread.id}
+                onClick={() => setActiveThread(thread)}
+                className="w-full flex items-center gap-3 px-4 py-4 bg-card active:bg-muted transition-colors text-left"
+              >
+                <div className="relative flex-shrink-0">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black text-white"
+                    style={{ backgroundColor: thread.avatarColor }}
+                  >
+                    {thread.avatar}
                   </div>
-                  <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">{thread.timestamp}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <p className={`text-xs truncate ${thread.unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                    {thread.lastMessage}
-                  </p>
-                  {thread.unread > 0 && (
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full gradient-primary text-white text-[10px] font-black flex items-center justify-center">
-                      {thread.unread}
-                    </span>
+                  {thread.online && (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-card" />
                   )}
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`font-bold text-sm ${thread.unread > 0 ? "text-foreground" : "text-foreground/80"}`}>
+                        {thread.name}
+                      </span>
+                      {thread.verified && <Shield className="h-3 w-3 text-primary flex-shrink-0" fill="currentColor" />}
+                    </div>
+                    <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">{thread.timestamp}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-xs truncate ${thread.unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                      {thread.lastMessage}
+                    </p>
+                    {thread.unread > 0 && (
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full gradient-primary text-white text-[10px] font-black flex items-center justify-center">
+                        {thread.unread}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Empty-ish state nudge */}
+        {/* Empty nudge */}
         <div className="mx-4 mt-6 mb-6 p-5 rounded-2xl bg-primary/8 border border-primary/20 text-center">
           <div className="text-2xl mb-2">💬</div>
           <p className="font-bold text-sm mb-1">Connect with more moms</p>
@@ -303,12 +436,21 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Self-managed bottom nav */}
       <BottomNavBar active="/messages" />
     </div>
   );
 }
 
+// ── HELPERS ────────────────────────────────────────────────
+function getRelativeTime(iso: string): string {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+// ── BOTTOM NAV ─────────────────────────────────────────────
 const NAV_TABS = [
   { label: "Home", icon: Home, href: "/" },
   { label: "Browse", icon: Search, href: "/browse" },
