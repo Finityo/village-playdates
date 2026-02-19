@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area support for notch / home indicator */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
 @layer base {
   :root {
     /* MomCircle — Outdoor Park Palette */
@@ -135,5 +143,28 @@
   }
   .font-display {
     font-family: 'Nunito', sans-serif;
+  }
+
+  /* Safe area insets for notch / home indicator */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Hide scrollbar while keeping scroll */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Active press state for touch */
+  .touch-active {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 }
