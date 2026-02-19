@@ -117,10 +117,14 @@ function AvatarUploader({
       <div
         className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-soft flex-shrink-0 cursor-pointer"
         onClick={() => !uploading && fileRef.current?.click()}
-        style={{ backgroundColor: avatarUrl ? undefined : avatarColor }}
+        style={{ backgroundColor: avatarUrl && !avatarUrl.startsWith("preset:") ? undefined : avatarColor }}
       >
-        {avatarUrl ? (
+        {avatarUrl && !avatarUrl.startsWith("preset:") ? (
           <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+        ) : avatarUrl?.startsWith("preset:") ? (
+          <div className="w-full h-full flex items-center justify-center text-4xl">
+            {avatarUrl.replace("preset:", "")}
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white">
             {initials}

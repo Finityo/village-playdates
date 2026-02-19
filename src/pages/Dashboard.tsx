@@ -6,6 +6,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { MOMS, INTEREST_ICONS } from "@/data/moms";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // ── STATIC DATA ───────────────────────────────────────────
 const UPCOMING_FEED = [
@@ -90,16 +91,7 @@ export default function Dashboard() {
           </div>
           {/* Avatar + bell */}
           <div className="flex items-center gap-2">
-            <div
-              className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xs font-black text-white shadow-soft flex-shrink-0"
-              style={{ backgroundColor: avatarUrl ? undefined : avatarColor }}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={firstName} className="w-full h-full object-cover" />
-              ) : (
-                avatarInitials
-              )}
-            </div>
+            <UserAvatar avatarUrl={avatarUrl} displayName={firstName} userId={user?.id} size="sm" className="shadow-soft" />
             <button className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card">
               <Bell className="h-5 w-5 text-foreground" />
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">3</span>

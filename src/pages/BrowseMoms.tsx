@@ -6,6 +6,7 @@ import { MOMS, MY_INTERESTS, INTEREST_ICONS, type Mom } from "@/data/moms";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
 import { useRealProfiles, type RealProfile } from "@/hooks/useRealProfiles";
+import { UserAvatar } from "@/components/UserAvatar";
 
 const AVATAR_COLORS = [
   "hsl(142 38% 40%)", "hsl(12 82% 65%)", "hsl(204 80% 62%)",
@@ -466,17 +467,8 @@ function RealProfileCard({ profile, myInterests }: { profile: RealProfile; myInt
       <div className="h-1.5 gradient-primary" />
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary/20">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.display_name ?? "Member"} className="w-full h-full object-cover" />
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center text-sm font-black text-white"
-                style={{ backgroundColor: color }}
-              >
-                {initials}
-              </div>
-            )}
+          <div className="relative flex-shrink-0">
+            <UserAvatar avatarUrl={profile.avatar_url} displayName={profile.display_name} userId={profile.id} size="md" className="border-2 border-primary/20" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
