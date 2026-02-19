@@ -1,111 +1,20 @@
 import { useState } from "react";
-import { MapPin, Heart, MessageCircle, Users, Shield, Star, Filter, Search, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { MapPin, Heart, MessageCircle, Users, Shield, Star, Filter, Search, ChevronDown, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { MOMS, MY_INTERESTS, INTEREST_ICONS, type Mom } from "@/data/moms";
 
-const mockMoms = [
-  {
-    id: 1,
-    name: "Jessica M.",
-    neighborhood: "Riverside Park",
-    kids: ["3 yrs", "5 yrs"],
-    interests: ["Outdoor play", "Arts & Crafts", "Montessori"],
-    availability: ["Weekday mornings", "Saturday afternoons"],
-    bio: "Coffee-fueled mama of two who loves hiking trails and spontaneous park days. Looking for moms who don't mind a little mud!",
-    distance: "0.4 mi",
-    verified: true,
-    liked: false,
-    avatar: "JM",
-    avatarColor: "hsl(142 38% 40%)",
-  },
-  {
-    id: 2,
-    name: "Amara K.",
-    neighborhood: "Sunfield District",
-    kids: ["2 yrs"],
-    interests: ["Nature walks", "Sensory play", "Music & Dance"],
-    availability: ["Weekday afternoons", "Sunday mornings"],
-    bio: "New in town with my adventurous toddler. Seeking a village of kindred spirits — let's build one together!",
-    distance: "0.9 mi",
-    verified: true,
-    liked: false,
-    avatar: "AK",
-    avatarColor: "hsl(12 82% 65%)",
-  },
-  {
-    id: 3,
-    name: "Sofia R.",
-    neighborhood: "Maplewood Heights",
-    kids: ["4 yrs", "7 yrs"],
-    interests: ["Sports & Active play", "Cooking together", "Book clubs"],
-    availability: ["Weekend mornings", "Friday afternoons"],
-    bio: "Sports mom raising future athletes (and future chefs 😄). Always planning the next playdate at the big park!",
-    distance: "1.2 mi",
-    verified: false,
-    liked: false,
-    avatar: "SR",
-    avatarColor: "hsl(204 80% 62%)",
-  },
-  {
-    id: 4,
-    name: "Priya T.",
-    neighborhood: "Cedarwood Commons",
-    kids: ["1 yr", "3 yrs"],
-    interests: ["Yoga & Wellness", "Outdoor play", "Bilingual"],
-    availability: ["Morning walks", "Weekday afternoons"],
-    bio: "Mindful mama raising bilingual kiddos. Love slow mornings at the park and spontaneous picnics!",
-    distance: "1.8 mi",
-    verified: true,
-    liked: false,
-    avatar: "PT",
-    avatarColor: "hsl(42 90% 60%)",
-  },
-  {
-    id: 5,
-    name: "Lauren B.",
-    neighborhood: "Green Valley",
-    kids: ["6 yrs"],
-    interests: ["Science & STEM", "Hiking", "Art projects"],
-    availability: ["After school", "Saturday mornings"],
-    bio: "Science-enthusiast mom who turns every park trip into a nature discovery mission. Snacks always included.",
-    distance: "2.1 mi",
-    verified: true,
-    liked: false,
-    avatar: "LB",
-    avatarColor: "hsl(133 45% 50%)",
-  },
-  {
-    id: 6,
-    name: "Maya O.",
-    neighborhood: "Harbor View",
-    kids: ["2 yrs", "4 yrs"],
-    interests: ["Water play", "Crafts", "Outdoor play"],
-    availability: ["Weekends", "Holiday mornings"],
-    bio: "Water baby mom! We're always finding puddles to jump in and parks to explore. Join our little crew!",
-    distance: "2.4 mi",
-    verified: false,
-    liked: false,
-    avatar: "MO",
-    avatarColor: "hsl(204 65% 55%)",
-  },
-];
-
-const interestOptions = ["All", "Outdoor play", "Arts & Crafts", "Montessori", "Nature walks", "Sports & Active", "Bilingual", "STEM", "Music & Dance"];
-const ageOptions = ["Any age", "0–1 yr", "1–2 yrs", "2–4 yrs", "4–6 yrs", "6+ yrs"];
-const availabilityOptions = ["Any time", "Weekday mornings", "Weekday afternoons", "Weekend mornings", "Weekend afternoons"];
+const interestOptions = ["All", "Outdoor play", "Arts & Crafts", "Montessori", "Nature walks", "Sports & Active play", "Bilingual", "Science & STEM", "Music & Dance"];
 
 export default function BrowseMoms() {
-  const [moms, setMoms] = useState(mockMoms);
+  const [moms, setMoms] = useState<Mom[]>(MOMS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedInterest, setSelectedInterest] = useState("All");
-  const [selectedAge, setSelectedAge] = useState("Any age");
-  const [selectedAvailability, setSelectedAvailability] = useState("Any time");
   const [showFilters, setShowFilters] = useState(false);
 
-  const toggleLike = (id: number) => {
-    setMoms((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, liked: !m.liked } : m))
-    );
+  const toggleLike = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setMoms((prev) => prev.map((m) => (m.id === id ? { ...m, liked: !m.liked } : m)));
   };
 
   const filtered = moms.filter((m) => {
@@ -122,7 +31,7 @@ export default function BrowseMoms() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-4">
+      <div className="sticky top-16 z-20 bg-background/95 backdrop-blur border-b border-border px-4 py-4">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-3">
             <div className="relative flex-1">
@@ -144,31 +53,9 @@ export default function BrowseMoms() {
             </button>
           </div>
 
-          {/* Filters */}
-          {showFilters && (
-            <div className="flex flex-wrap gap-2 pt-1 pb-2 animate-in slide-in-from-top-2">
-              <div className="flex flex-wrap gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground self-center mr-1">Interests:</span>
-                {interestOptions.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setSelectedInterest(opt)}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
-                      selectedInterest === opt
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card border-border hover:bg-accent"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Horizontal interest chips (always visible) */}
-          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-            {interestOptions.slice(0, 6).map((opt) => (
+          {/* Interest chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {interestOptions.map((opt) => (
               <button
                 key={opt}
                 onClick={() => setSelectedInterest(opt)}
@@ -193,7 +80,7 @@ export default function BrowseMoms() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((mom) => (
-            <MomCard key={mom.id} mom={mom} onLike={() => toggleLike(mom.id)} />
+            <MomCard key={mom.id} mom={mom} onLike={(e) => toggleLike(e, mom.id)} />
           ))}
         </div>
 
@@ -209,9 +96,15 @@ export default function BrowseMoms() {
   );
 }
 
-function MomCard({ mom, onLike }: { mom: typeof mockMoms[0]; onLike: () => void }) {
+function MomCard({ mom, onLike }: { mom: Mom; onLike: (e: React.MouseEvent) => void }) {
+  const navigate = useNavigate();
+  const sharedCount = mom.interests.filter((i) => MY_INTERESTS.includes(i)).length;
+
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-card hover:shadow-hover transition-all duration-300 overflow-hidden group">
+    <div
+      onClick={() => navigate(`/mom/${mom.id}`)}
+      className="rounded-2xl border border-border bg-card shadow-card hover:shadow-hover transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-0.5"
+    >
       {/* Top accent strip */}
       <div className="h-1.5 gradient-primary" />
 
@@ -265,11 +158,19 @@ function MomCard({ mom, onLike }: { mom: typeof mockMoms[0]; onLike: () => void 
         {/* Bio */}
         <p className="text-xs text-muted-foreground leading-relaxed mb-4 line-clamp-2">{mom.bio}</p>
 
+        {/* Shared interests badge */}
+        {sharedCount > 0 && (
+          <div className="flex items-center gap-1.5 mb-3 bg-primary/8 text-primary rounded-lg px-2.5 py-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="text-xs font-bold">{sharedCount} shared interest{sharedCount > 1 ? "s" : ""}</span>
+          </div>
+        )}
+
         {/* Interests */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {mom.interests.slice(0, 3).map((interest) => (
             <Badge key={interest} variant="secondary" className="text-xs rounded-full font-semibold">
-              {interest}
+              {INTEREST_ICONS[interest] ?? "🌸"} {interest}
             </Badge>
           ))}
         </div>
@@ -278,16 +179,22 @@ function MomCard({ mom, onLike }: { mom: typeof mockMoms[0]; onLike: () => void 
         <div className="text-xs text-muted-foreground mb-4">
           <span className="font-semibold text-foreground">Available: </span>
           {mom.availability[0]}
-          {mom.availability.length > 1 && ` +${mom.availability.length - 1}`}
+          {mom.availability.length > 1 && ` +${mom.availability.length - 1} more`}
         </div>
 
         {/* Actions */}
         <div className="flex gap-2">
-          <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition">
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/mom/${mom.id}`); }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition"
+          >
             <MessageCircle className="h-3.5 w-3.5" />
-            Connect
+            View Profile
           </button>
-          <button className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-accent text-accent-foreground hover:bg-secondary/30 transition">
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-accent text-accent-foreground hover:bg-secondary/30 transition"
+          >
             <Star className="h-3.5 w-3.5" />
             Playdate
           </button>
