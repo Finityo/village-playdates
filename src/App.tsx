@@ -6,20 +6,24 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import BrowseMoms from "./pages/BrowseMoms";
 import MomProfile from "./pages/MomProfile";
+import Messages from "./pages/Messages";
+import Playdates from "./pages/Playdates";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import MobileTopBar from "./components/MobileTopBar";
 
 const queryClient = new QueryClient();
 
-// Pages that show the profile detail (no top bar, back button handles nav)
-const PROFILE_ROUTES = ["/mom/"];
+// Pages that suppress the shell nav
+const PROFILE_ROUTES = ["/mom/", "/onboarding"];
 
 function Layout() {
   const location = useLocation();
-  const isProfilePage = PROFILE_ROUTES.some(r => location.pathname.startsWith(r));
+  const isProfilePage = PROFILE_ROUTES.some(r => location.pathname.startsWith(r)) || location.pathname === "/onboarding";
   
   const pageTitles: Record<string, string> = {
+    "/": "MomCircle",
     "/browse": "Find Moms",
     "/playdates": "Playdates",
     "/messages": "Messages",
@@ -35,6 +39,9 @@ function Layout() {
           <Route path="/" element={<Index />} />
           <Route path="/browse" element={<BrowseMoms />} />
           <Route path="/mom/:id" element={<MomProfile />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/playdates" element={<Playdates />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
