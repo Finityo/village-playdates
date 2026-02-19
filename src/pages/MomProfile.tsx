@@ -60,6 +60,7 @@ export default function MomProfile() {
   const handleConnect = () => {
     setConnected(true);
     if (activeIcebreaker === null) setActiveIcebreaker(mom.icebreakers[0]);
+    navigate("/messages");
   };
 
   return (
@@ -151,7 +152,7 @@ export default function MomProfile() {
             {connected ? "Message Sent ✓" : "Connect & Message"}
           </button>
           <button
-            onClick={() => setPlaydateSent(true)}
+            onClick={() => { setPlaydateSent(true); navigate("/playdates"); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm border-2 transition-all ${
               playdateSent
                 ? "border-secondary bg-secondary/20 text-foreground"
@@ -186,7 +187,10 @@ export default function MomProfile() {
               ))}
             </div>
             {activeIcebreaker && (
-              <button className="mt-3 w-full py-2.5 rounded-xl gradient-primary text-white text-sm font-bold hover:shadow-hover transition-all">
+              <button
+                onClick={() => navigate("/messages")}
+                className="mt-3 w-full py-2.5 rounded-xl gradient-primary text-white text-sm font-bold hover:shadow-hover transition-all"
+              >
                 Send Message →
               </button>
             )}
@@ -358,7 +362,7 @@ export default function MomProfile() {
           {connected ? "Message Sent ✓" : "Connect"}
         </button>
         <button
-          onClick={() => setPlaydateSent(true)}
+          onClick={() => { setPlaydateSent(true); navigate("/playdates"); }}
           className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition ${
             playdateSent ? "border-secondary bg-secondary/20" : "border-secondary bg-accent"
           }`}

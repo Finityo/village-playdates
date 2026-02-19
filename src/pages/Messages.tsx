@@ -362,13 +362,17 @@ export default function Messages() {
         <div className="flex items-center justify-between px-4 h-14">
           <span className="font-display font-black text-lg">Messages</span>
           <div className="flex items-center gap-2">
-            <button className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition">
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition"
+              aria-label="Scroll to top"
+            >
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-coral" />
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition">
+            <Link to="/profile" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition" aria-label="Go to profile settings">
               <Settings className="h-5 w-5 text-muted-foreground" />
-            </button>
+            </Link>
           </div>
         </div>
       </header>
