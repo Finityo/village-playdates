@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, MapPin, Navigation } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Loader2, MapPin, Navigation, Smile } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,18 @@ const INTERESTS = [
   { emoji: "🌸", label: "Mindfulness" },
 ];
 
+// Illustrated avatars — colourful emoji-style options
+const PRESET_AVATARS = [
+  { id: "flower", emoji: "🌸", bg: "hsl(330,70%,92%)" },
+  { id: "sun",    emoji: "☀️", bg: "hsl(45,90%,88%)"  },
+  { id: "leaf",   emoji: "🌿", bg: "hsl(142,50%,88%)" },
+  { id: "wave",   emoji: "🌊", bg: "hsl(204,70%,88%)" },
+  { id: "star",   emoji: "⭐", bg: "hsl(50,90%,85%)"  },
+  { id: "heart",  emoji: "💚", bg: "hsl(142,45%,85%)" },
+  { id: "moon",   emoji: "🌙", bg: "hsl(270,50%,90%)" },
+  { id: "cherry", emoji: "🍒", bg: "hsl(0,65%,90%)"   },
+];
+
 // ── STEP 1: Name ─────────────────────────────────────────
 function StepName({ value, onChange, onNext }: { value: string; onChange: (v: string) => void; onNext: () => void }) {
   return (
@@ -59,7 +71,155 @@ function StepName({ value, onChange, onNext }: { value: string; onChange: (v: st
   );
 }
 
-// ── STEP 2: Neighborhood ─────────────────────────────────
+// ── STEP 2: Photo ─────────────────────────────────────────
+type PhotoStepProps = {
+  name: string;
+  avatarUrl: string | null;
+  presetId: string | null;
+  onUpload: (url: string) => void;
+  onPreset: (id: string, emoji: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+  userId: string;
+};
+
+function StepPhoto({ name, avatarUrl, presetId, onUpload, onPreset, onNext, onBack, userId }: PhotoStepProps) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const [tab, setTab] = useState<"upload" | "avatar">("upload");
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Size guard
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Photo too large", description: "Please pick a photo under 5 MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      onUpload(data.publicUrl);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const selected = avatarUrl || presetId;
+
+  return (
+    <div className="flex flex-col flex-1 px-6 pt-4">
+      <div className="text-5xl mb-4">🤳</div>
+      <h2 className="font-display font-black text-3xl mb-1 leading-tight">Add your photo</h2>
+      <p className="text-muted-foreground text-sm mb-5">
+        Help other moms recognise you. <span className="font-semibold text-foreground">No kids in photos</span> — your safety matters.
+      </p>
+
+      {/* Preview */}
+      <div className="flex justify-center mb-5">
+        <div className="relative w-24 h-24">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Your photo" className="w-24 h-24 rounded-full object-cover border-4 border-primary/30 shadow-lg" />
+          ) : presetId ? (
+            <div
+              className="w-24 h-24 rounded-full border-4 border-primary/30 shadow-lg flex items-center justify-center text-4xl"
+              style={{ background: PRESET_AVATARS.find(a => a.id === presetId)?.bg }}
+            >
+              {PRESET_AVATARS.find(a => a.id === presetId)?.emoji}
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-muted border-4 border-border flex items-center justify-center">
+              <Smile className="h-10 w-10 text-muted-foreground/40" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-muted p-1 rounded-2xl mb-4">
+        <button
+          onClick={() => setTab("upload")}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+        >
+          <Camera className="h-3.5 w-3.5" /> My Photo
+        </button>
+        <button
+          onClick={() => setTab("avatar")}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "avatar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+        >
+          <Smile className="h-3.5 w-3.5" /> Choose Avatar
+        </button>
+      </div>
+
+      {tab === "upload" && (
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleFile}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="w-full py-3.5 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-bold text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Choose from camera roll"}
+          </button>
+          {avatarUrl && (
+            <p className="text-center text-xs text-primary font-semibold mt-2">✓ Photo uploaded</p>
+          )}
+        </div>
+      )}
+
+      {tab === "avatar" && (
+        <div className="grid grid-cols-4 gap-3">
+          {PRESET_AVATARS.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => onPreset(a.id, a.emoji)}
+              className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-[0.92] border-2 ${
+                presetId === a.id && !avatarUrl ? "border-primary scale-105 shadow-md" : "border-transparent"
+              }`}
+              style={{ background: a.bg }}
+            >
+              {a.emoji}
+              {presetId === a.id && !avatarUrl && (
+                <span className="absolute text-[10px]" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-auto flex gap-3 py-4">
+        <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
+        <button
+          onClick={onNext}
+          className="flex-1 py-4 rounded-2xl gradient-primary text-white font-bold text-sm active:scale-[0.98] transition-all"
+        >
+          {selected ? "Continue" : "Skip for now"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 3: Neighborhood ─────────────────────────────────
 function StepNeighborhood({ value, onChange, onNext, onBack }: { value: string; onChange: (v: string) => void; onNext: () => void; onBack: () => void }) {
   return (
     <div className="flex flex-col flex-1 px-6 pt-4">
@@ -88,7 +248,7 @@ function StepNeighborhood({ value, onChange, onNext, onBack }: { value: string; 
   );
 }
 
-// ── STEP 3: Location ─────────────────────────────────────
+// ── STEP 4: Location ─────────────────────────────────────
 type LocationStepProps = {
   onGrant: (lat: number, lng: number) => void;
   onSkip: () => void;
@@ -116,7 +276,7 @@ function StepLocation({ onGrant, onSkip, onBack }: LocationStepProps) {
 
   return (
     <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">📍</div>
+      <div className="text-5xl mb-6">🗺️</div>
       <h2 className="font-display font-black text-3xl mb-2 leading-tight">Find parks near you</h2>
       <p className="text-muted-foreground text-base mb-8">
         Allow location so the map opens right where you are — no searching required.
@@ -159,7 +319,7 @@ function StepLocation({ onGrant, onSkip, onBack }: LocationStepProps) {
   );
 }
 
-// ── STEP 4: Kids' Ages ───────────────────────────────────
+// ── STEP 5: Kids' Ages ───────────────────────────────────
 function StepKids({ value, onChange, onNext, onBack }: { value: string[]; onChange: (v: string[]) => void; onNext: () => void; onBack: () => void }) {
   const toggle = (age: string) =>
     onChange(value.includes(age) ? value.filter((a) => a !== age) : [...value, age]);
@@ -189,7 +349,7 @@ function StepKids({ value, onChange, onNext, onBack }: { value: string[]; onChan
   );
 }
 
-// ── STEP 4: Interests ────────────────────────────────────
+// ── STEP 6: Interests ────────────────────────────────────
 function StepInterests({ value, onChange, onFinish, onBack, saving }: { value: string[]; onChange: (v: string[]) => void; onFinish: () => void; onBack: () => void; saving: boolean }) {
   const toggle = (label: string) =>
     onChange(value.includes(label) ? value.filter((i) => i !== label) : [...value, label]);
@@ -237,14 +397,17 @@ export default function Onboarding() {
 
   // Lifted state
   const [name, setName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [presetId, setPresetId] = useState<string | null>(null);
+  const [presetEmoji, setPresetEmoji] = useState<string | null>(null);
   const [neighborhood, setNeighborhood] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [kidsAges, setKidsAges] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
 
-  const TOTAL = 5;
-  const stepLabels = ["Name", "Neighborhood", "Location", "Kids' ages", "Interests"];
+  const TOTAL = 6;
+  const stepLabels = ["Name", "Photo", "Area", "Location", "Kids", "Interests"];
 
   const next = () => {
     if (step < TOTAL - 1) setStep((s) => s + 1);
@@ -252,6 +415,18 @@ export default function Onboarding() {
   const back = () => {
     if (step === 0) navigate("/");
     else setStep((s) => s - 1);
+  };
+
+  const handlePreset = (id: string, emoji: string) => {
+    setPresetId(id);
+    setPresetEmoji(emoji);
+    setAvatarUrl(null); // clear any uploaded photo if switching to avatar
+  };
+
+  const handleUpload = (url: string) => {
+    setAvatarUrl(url);
+    setPresetId(null); // clear preset if uploading real photo
+    setPresetEmoji(null);
   };
 
   const finish = async () => {
@@ -264,10 +439,20 @@ export default function Onboarding() {
         kids_ages: kidsAges,
         interests,
       };
+
+      // Real uploaded photo takes priority; fallback to preset emoji stored as avatar_url sentinel
+      if (avatarUrl) {
+        updates.avatar_url = avatarUrl;
+      } else if (presetEmoji) {
+        // Store the preset as a data URI so the rest of the app renders it consistently
+        updates.avatar_url = `preset:${presetEmoji}`;
+      }
+
       if (lat !== null && lng !== null) {
         updates.lat = lat;
         updates.lng = lng;
       }
+
       const { error } = await supabase
         .from("profiles")
         .update(updates)
@@ -315,16 +500,28 @@ export default function Onboarding() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div key={step} className="flex-1 flex flex-col animate-in slide-in-from-right-4 duration-250">
           {step === 0 && <StepName value={name} onChange={setName} onNext={next} />}
-          {step === 1 && <StepNeighborhood value={neighborhood} onChange={setNeighborhood} onNext={next} onBack={back} />}
-          {step === 2 && (
+          {step === 1 && user && (
+            <StepPhoto
+              name={name}
+              avatarUrl={avatarUrl}
+              presetId={presetId}
+              onUpload={handleUpload}
+              onPreset={handlePreset}
+              onNext={next}
+              onBack={back}
+              userId={user.id}
+            />
+          )}
+          {step === 2 && <StepNeighborhood value={neighborhood} onChange={setNeighborhood} onNext={next} onBack={back} />}
+          {step === 3 && (
             <StepLocation
-              onGrant={(la, ln) => { setLat(la); setLng(ln); }}
+              onGrant={(la, ln) => { setLat(la); setLng(ln); next(); }}
               onSkip={next}
               onBack={back}
             />
           )}
-          {step === 3 && <StepKids value={kidsAges} onChange={setKidsAges} onNext={next} onBack={back} />}
-          {step === 4 && <StepInterests value={interests} onChange={setInterests} onFinish={finish} onBack={back} saving={saving} />}
+          {step === 4 && <StepKids value={kidsAges} onChange={setKidsAges} onNext={next} onBack={back} />}
+          {step === 5 && <StepInterests value={interests} onChange={setInterests} onFinish={finish} onBack={back} saving={saving} />}
         </div>
       </div>
     </div>
