@@ -502,6 +502,7 @@ export default function Playdates() {
     if (!error && data) {
       await supabase.from("playdate_rsvps").insert({ playdate_id: data.id, user_id: user.id });
       schedulePlaydateReminder(park, time, 5000);
+      await fetchPlaydates();
     }
   };
 
