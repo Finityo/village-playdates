@@ -30,7 +30,7 @@ function Layout() {
   return (
     <>
       {!isProfilePage && <MobileTopBar title={title} />}
-      <main className={`${isProfilePage ? "" : "pt-14"} pb-20`}>
+      <main className={`${isProfilePage ? "" : "pt-14"} ${isProfilePage ? "pb-0" : "pb-20"}`}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/browse" element={<BrowseMoms />} />
@@ -38,7 +38,7 @@ function Layout() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      <BottomNav />
+      {!isProfilePage && <BottomNav />}
     </>
   );
 }
