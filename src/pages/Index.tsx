@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles, Settings, Bell } from "lucide-react";
+import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import heroLanding from "@/assets/hero-landing.jpg";
 
 const howItWorks = [
@@ -35,16 +35,15 @@ export default function Index() {
         <div className="flex items-center gap-2">
           <Link
             to="/login"
-            className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition"
+            className="px-4 py-2 rounded-full text-sm font-bold border border-border hover:bg-muted transition"
           >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-coral" />
+            Sign in
           </Link>
           <Link
-            to="/login"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition"
+            to="/signup"
+            className="px-4 py-2 rounded-full text-sm font-bold gradient-primary text-white shadow-soft hover:opacity-90 transition"
           >
-            <Settings className="h-5 w-5 text-muted-foreground" />
+            Join free
           </Link>
         </div>
       </div>
@@ -179,9 +178,9 @@ export default function Index() {
         <div className="font-display font-black text-base text-primary mb-1">MomCircle</div>
         <p className="text-xs text-muted-foreground">© 2025 · Building villages, one playdate at a time 🛝</p>
         <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
-          <a href="#" className="hover:text-foreground">Privacy</a>
-          <a href="#" className="hover:text-foreground">Safety</a>
-          <a href="#" className="hover:text-foreground">Terms</a>
+          <Link to="/signup" className="hover:text-foreground">Privacy</Link>
+          <Link to="/signup" className="hover:text-foreground">Safety</Link>
+          <Link to="/signup" className="hover:text-foreground">Terms</Link>
         </div>
       </footer>
     </div>
