@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Star, Users, Navigation, X } from "lucide-react";
@@ -130,6 +131,7 @@ const PARKS: Park[] = [
 ];
 
 export default function MapPage() {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -290,12 +292,12 @@ export default function MapPage() {
               <p className="text-xs font-semibold text-accent-foreground">💡 Mom tip: {selected.tip}</p>
             </div>
 
-            <a
-              href="/playdates"
+            <button
+              onClick={() => navigate(`/playdates?park=${encodeURIComponent(selected.name)}`)}
               className="block w-full py-3 rounded-2xl gradient-primary text-white font-bold text-sm text-center active:scale-[0.98] transition-all"
             >
               Plan a Playdate Here 🛝
-            </a>
+            </button>
           </div>
         )}
       </div>
