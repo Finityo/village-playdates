@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MapPin, Heart, MessageCircle, Users, Shield, Star, Filter, Search, CheckCircle2, X, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MOMS, MY_INTERESTS, INTEREST_ICONS, type Mom } from "@/data/moms";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const DISTANCE_OPTIONS = ["0.5 mi", "1 mi", "2 mi", "5 mi"];
 const AGE_GROUP_OPTIONS = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];
@@ -47,12 +48,19 @@ export default function BrowseMoms() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [pendingFilters, setPendingFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const { notifyNewMatch } = useNotifications();
 
   const activeCount = countActiveFilters(filters);
 
   const toggleLike = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
+    const mom = moms.find((m) => m.id === id);
+    const wasLiked = mom?.liked ?? false;
     setMoms((prev) => prev.map((m) => (m.id === id ? { ...m, liked: !m.liked } : m)));
+    // Fire "new match" notification when the user hearts a mom (mutual match simulation)
+    if (!wasLiked && mom) {
+      notifyNewMatch(mom.name, mom.distance);
+    }
   };
 
   const openSheet = () => {
