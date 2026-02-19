@@ -185,6 +185,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_location: {
+        Args: never
+        Returns: {
+          lat: number
+          lng: number
+        }[]
+      }
       is_profile_owner: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
