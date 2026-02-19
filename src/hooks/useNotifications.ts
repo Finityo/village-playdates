@@ -96,5 +96,24 @@ export function useNotifications() {
     } as ScheduleOptions);
   }, []);
 
-  return { notifyNewMessage, schedulePlaydateReminder, notifyNewMatch };
+  /** Notify playdate creator when someone RSVPs to their event */
+  const notifyRsvp = useCallback(async (park: string) => {
+    const granted = await requestPermissions();
+    if (!granted) return;
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: nextId(),
+          title: "Someone joined your playdate! 🛝",
+          body: `A new mom just RSVP'd to your playdate at ${park}!`,
+          smallIcon: "ic_stat_icon_config_sample",
+          iconColor: "#3d8b5e",
+          extra: { type: "rsvp", park },
+        },
+      ],
+    } as ScheduleOptions);
+  }, []);
+
+  return { notifyNewMessage, schedulePlaydateReminder, notifyNewMatch, notifyRsvp };
 }

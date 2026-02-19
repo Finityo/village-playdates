@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Calendar, MessageCircle, User } from "lucide-react";
+import { Home, Search, Calendar, MessageCircle, Map } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,8 +44,8 @@ export default function BottomNav() {
     { label: "Home", icon: Home, href: "/" },
     { label: "Browse", icon: Search, href: "/browse" },
     { label: "Playdates", icon: Calendar, href: "/playdates" },
+    { label: "Map", icon: Map, href: "/map" },
     { label: "Messages", icon: MessageCircle, href: "/messages" },
-    { label: "Profile", icon: User, href: "/profile" },
   ];
 
   return (

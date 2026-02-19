@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import MapPage from "./pages/Map";
 import BottomNav from "./components/BottomNav";
 import MobileTopBar from "./components/MobileTopBar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -31,6 +32,7 @@ function Layout() {
     "/": "MomCircle",
     "/browse": "Find Moms",
     "/playdates": "Playdates",
+    "/map": "Park Map",
     "/profile": "My Profile",
   };
   const title = pageTitles[location.pathname];
@@ -51,6 +53,7 @@ function Layout() {
           <Route path="/mom/:id" element={<ProtectedRoute><MomProfile /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
           <Route path="/playdates" element={<ProtectedRoute><Playdates /></ProtectedRoute>} />
+          <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />

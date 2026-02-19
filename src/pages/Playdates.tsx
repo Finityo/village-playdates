@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, MapPin, Calendar, Users, Clock, X, Loader2, CheckCircle2, LogIn } from "lucide-react";
+import { Plus, MapPin, Calendar, Clock, X, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 // ── TYPES ────────────────────────────────────────────────
 interface Playdate {
@@ -24,29 +26,10 @@ const PARKS = [
   "Cedarwood Green",
 ];
 
-const TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
-
-function getUpcomingDates(): { label: string; value: string }[] {
-  const dates: { label: string; value: string }[] = [];
-  const today = new Date();
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const label = i === 0
-      ? `Today, ${monthNames[d.getMonth()]} ${d.getDate()}`
-      : i === 1
-      ? `Tomorrow, ${monthNames[d.getMonth()]} ${d.getDate()}`
-      : `${dayNames[d.getDay()]}, ${monthNames[d.getMonth()]} ${d.getDate()}`;
-    const value = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-    dates.push({ label, value });
-  }
-  return dates;
-}
+const TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"];
 
 // ── ATTENDEE STACK ───────────────────────────────────────
-function AttendeeStack({ count, creatorInitials }: { count: number; creatorInitials: string }) {
+function AttendeeStack({ count }: { count: number }) {
   const colors = ["hsl(142 38% 40%)", "hsl(204 80% 62%)", "hsl(42 90% 60%)", "hsl(12 82% 65%)"];
   const shown = Math.min(count, 3);
   return (
@@ -57,7 +40,7 @@ function AttendeeStack({ count, creatorInitials }: { count: number; creatorIniti
           className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 border-card"
           style={{ backgroundColor: colors[i % colors.length], marginLeft: i > 0 ? "-8px" : 0, zIndex: shown - i }}
         >
-          {i === 0 ? creatorInitials : "?"}
+          {"?"}
         </div>
       ))}
       {count > 3 && (
@@ -82,7 +65,6 @@ function PlaydateCard({
 }) {
   const isGoing = userId ? pd.rsvps.some((r) => r.user_id === userId) : false;
   const isOwn = userId === pd.creator_id;
-  const isUpcoming = true; // all loaded playdates are upcoming
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
@@ -97,7 +79,7 @@ function PlaydateCard({
               <CheckCircle2 className="h-2.5 w-2.5" /> Going
             </span>
           )}
-          {!isGoing && isUpcoming && (
+          {!isGoing && (
             <span className="text-[10px] font-black uppercase tracking-wide bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
               Upcoming
             </span>
@@ -116,7 +98,7 @@ function PlaydateCard({
             <span>{pd.time}</span>
           </div>
         </div>
-        <AttendeeStack count={pd.rsvps.length} creatorInitials="?" />
+        <AttendeeStack count={pd.rsvps.length} />
         {!isOwn && (
           <button
             onClick={() => onRsvp(pd)}
@@ -149,24 +131,24 @@ function PlanSheet({
 }) {
   const [step, setStep] = useState(0);
   const [selectedPark, setSelectedPark] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const dates = getUpcomingDates();
-
   const canNext = [
     selectedPark !== "",
-    selectedDate !== "" && selectedTime !== "",
-    true, // description optional
+    selectedDate !== undefined && selectedTime !== "",
+    true, // description is optional
   ];
 
   const steps = ["Pick a Park", "Date & Time", "Description"];
 
   const handleConfirm = async () => {
+    if (!selectedDate) return;
     setSaving(true);
-    await onConfirm(selectedPark, selectedDate, selectedTime, description);
+    const dateLabel = format(selectedDate, "EEE, MMM d");
+    await onConfirm(selectedPark, dateLabel, selectedTime, description);
     setSaving(false);
     onClose();
   };
@@ -175,7 +157,7 @@ function PlanSheet({
     <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50" onClick={onClose}>
       <div
         className="bg-background rounded-t-3xl pt-2 pb-0 flex flex-col overflow-hidden"
-        style={{ height: "min(85dvh, 85vh)" }}
+        style={{ height: "min(90dvh, 90vh)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full bg-border mx-auto mb-4" />
@@ -229,24 +211,25 @@ function PlanSheet({
           {step === 1 && (
             <div className="pb-4 space-y-5">
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">Date</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {dates.map((d) => (
-                    <button
-                      key={d.value}
-                      onClick={() => setSelectedDate(d.label)}
-                      className={`p-3 rounded-2xl border text-sm font-semibold text-left transition-all active:scale-[0.97] ${
-                        selectedDate === d.label ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"
-                      }`}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">📅 Pick a Date</p>
+                <div className="flex justify-center">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    className="rounded-2xl border border-border bg-card p-3 pointer-events-auto"
+                  />
                 </div>
+                {selectedDate && (
+                  <p className="text-center text-xs font-bold text-primary mt-2">
+                    Selected: {format(selectedDate, "EEEE, MMMM d, yyyy")}
+                  </p>
+                )}
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">Time</p>
-                <div className="grid grid-cols-4 gap-2">
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">⏰ Pick a Time</p>
+                <div className="grid grid-cols-5 gap-2">
                   {TIMES.map((t) => (
                     <button
                       key={t}
@@ -276,7 +259,9 @@ function PlanSheet({
               />
               <div className="bg-primary/8 rounded-2xl border border-primary/20 p-4 space-y-1">
                 <p className="text-xs font-black text-primary">📍 {selectedPark}</p>
-                <p className="text-xs text-muted-foreground">{selectedDate} at {selectedTime}</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedDate && format(selectedDate, "EEEE, MMMM d")} at {selectedTime}
+                </p>
               </div>
             </div>
           )}
@@ -318,7 +303,7 @@ function PlanSheet({
 export default function Playdates() {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { schedulePlaydateReminder } = useNotifications();
+  const { schedulePlaydateReminder, notifyRsvp } = useNotifications();
   const [playdates, setPlaydates] = useState<Playdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPlan, setShowPlan] = useState(false);
@@ -339,15 +324,29 @@ export default function Playdates() {
     fetchPlaydates();
   }, [fetchPlaydates]);
 
-  // Realtime: listen for new playdates and rsvp changes
+  // Realtime: new playdates + rsvp changes
   useEffect(() => {
     const channel = supabase
       .channel("playdates-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "playdates" }, fetchPlaydates)
-      .on("postgres_changes", { event: "*", schema: "public", table: "playdate_rsvps" }, fetchPlaydates)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "playdate_rsvps" }, async (payload) => {
+        // Notify the playdate creator when someone RSVPs to their playdate
+        if (!user) return;
+        const rsvpUserId = (payload.new as { user_id: string }).user_id;
+        const playdateId = (payload.new as { playdate_id: string }).playdate_id;
+        // Find if this RSVP is for one of my playdates
+        const myPlaydate = playdates.find(
+          (pd) => pd.id === playdateId && pd.creator_id === user.id && rsvpUserId !== user.id
+        );
+        if (myPlaydate) {
+          await notifyRsvp(myPlaydate.park);
+        }
+        fetchPlaydates();
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "playdate_rsvps" }, fetchPlaydates)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchPlaydates]);
+  }, [fetchPlaydates, playdates, user, notifyRsvp]);
 
   const handleCreate = async (park: string, date: string, time: string, description: string) => {
     if (!user) return;
@@ -358,7 +357,6 @@ export default function Playdates() {
       .single();
 
     if (!error && data) {
-      // Auto-RSVP creator
       await supabase.from("playdate_rsvps").insert({ playdate_id: data.id, user_id: user.id });
       schedulePlaydateReminder(park, time, 5000);
     }
@@ -378,7 +376,6 @@ export default function Playdates() {
         .from("playdate_rsvps")
         .insert({ playdate_id: pd.id, user_id: user.id });
     }
-    // Realtime will refresh — but also do a manual refresh for instant feel
     fetchPlaydates();
   };
 
@@ -404,7 +401,6 @@ export default function Playdates() {
         </div>
       ) : (
         <>
-          {/* My Playdates */}
           {myPlaydates.length > 0 && (
             <section className="px-4 py-2">
               <h2 className="font-display font-bold text-base mb-3 flex items-center gap-2">
@@ -418,7 +414,6 @@ export default function Playdates() {
             </section>
           )}
 
-          {/* Upcoming (join) */}
           <section className="px-4 py-2">
             <h2 className="font-display font-bold text-base mb-3 flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
@@ -441,7 +436,6 @@ export default function Playdates() {
         </>
       )}
 
-      {/* FAB */}
       <button
         onClick={() => setShowPlan(true)}
         className="fixed bottom-24 right-5 z-40 flex items-center gap-2 px-5 py-3.5 rounded-2xl gradient-primary text-white font-bold text-sm shadow-floating active:scale-[0.96] transition-all"
