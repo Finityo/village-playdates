@@ -1,25 +1,15 @@
-import { useState } from "react";
-import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut } from "lucide-react";
-import { MY_INTERESTS, INTEREST_ICONS, AVAILABILITY_ICONS } from "@/data/moms";
+import { useState, useEffect } from "react";
+import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut, Loader2 } from "lucide-react";
+import { INTEREST_ICONS, AVAILABILITY_ICONS } from "@/data/moms";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-// ── MY PROFILE DATA ──────────────────────────────────────
-const MY_PROFILE = {
-  name: "Sarah M.",
-  avatar: "SM",
-  avatarColor: "hsl(204 80% 62%)",
-  neighborhood: "Riverside Park",
-  bio: "Coffee-fueled mama of two who loves park days, creative projects, and building a real community. Let's be each other's village! 🌸",
-  kids: ["3 yrs", "5 yrs"],
-  interests: MY_INTERESTS,
-  availability: ["Weekday mornings", "Saturday afternoons", "Sunday mornings"],
-  verified: true,
-  memberSince: "Jan 2025",
-  playdatesHosted: 7,
-  connectionsCount: 12,
-  playdatesAttended: 14,
-};
+const AVATAR_COLORS = [
+  "hsl(142 38% 40%)", "hsl(12 82% 65%)", "hsl(204 80% 62%)",
+  "hsl(42 90% 60%)", "hsl(133 45% 50%)", "hsl(204 65% 55%)",
+];
 
 const NEIGHBORHOODS = [
   "Riverside Park", "Sunfield District", "Maplewood Heights",
@@ -28,49 +18,69 @@ const NEIGHBORHOODS = [
 ];
 
 const ALL_INTERESTS = [
-  { emoji: "🛝", label: "Outdoor play" },
-  { emoji: "🎨", label: "Arts & Crafts" },
-  { emoji: "🌿", label: "Nature walks" },
-  { emoji: "📖", label: "Books & Storytime" },
-  { emoji: "🫧", label: "Sensory play" },
-  { emoji: "🎵", label: "Music & Dance" },
-  { emoji: "⚽", label: "Sports & Active" },
-  { emoji: "🍳", label: "Cooking together" },
-  { emoji: "🥾", label: "Hiking" },
-  { emoji: "🧘", label: "Yoga & Wellness" },
-  { emoji: "🔬", label: "Science & STEM" },
-  { emoji: "💧", label: "Water play" },
-  { emoji: "🧺", label: "Picnics" },
-  { emoji: "📚", label: "Montessori" },
-  { emoji: "🏛️", label: "Museums" },
-  { emoji: "🌸", label: "Mindfulness" },
+  { emoji: "🛝", label: "Outdoor play" }, { emoji: "🎨", label: "Arts & Crafts" },
+  { emoji: "🌿", label: "Nature walks" }, { emoji: "📖", label: "Books & Storytime" },
+  { emoji: "🫧", label: "Sensory play" }, { emoji: "🎵", label: "Music & Dance" },
+  { emoji: "⚽", label: "Sports & Active" }, { emoji: "🍳", label: "Cooking together" },
+  { emoji: "🥾", label: "Hiking" }, { emoji: "🧘", label: "Yoga & Wellness" },
+  { emoji: "🔬", label: "Science & STEM" }, { emoji: "💧", label: "Water play" },
+  { emoji: "🧺", label: "Picnics" }, { emoji: "📚", label: "Montessori" },
+  { emoji: "🏛️", label: "Museums" }, { emoji: "🌸", label: "Mindfulness" },
 ];
 
 const KIDS_AGES = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];
 
-// ── EDIT PROFILE SHEET ───────────────────────────────────
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getAvatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// ── EDIT PROFILE SHEET ────────────────────────────────────
 function EditSheet({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState(MY_PROFILE.name.split(" ")[0]);
-  const [neighborhood, setNeighborhood] = useState(MY_PROFILE.neighborhood);
-  const [bio, setBio] = useState(MY_PROFILE.bio);
-  const [selectedKids, setSelectedKids] = useState<string[]>(MY_PROFILE.kids);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>(MY_PROFILE.interests);
+  const { profile, updateProfile } = useProfile();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  const [name, setName] = useState(profile?.display_name ?? "");
+  const [neighborhood, setNeighborhood] = useState(profile?.neighborhood ?? "");
+  const [bio, setBio] = useState(profile?.bio ?? "");
+  const [selectedKids, setSelectedKids] = useState<string[]>(profile?.kids_ages ?? []);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(profile?.interests ?? []);
 
   const toggleKid = (age: string) =>
     setSelectedKids((prev) => prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]);
   const toggleInterest = (label: string) =>
     setSelectedInterests((prev) => prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]);
 
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await updateProfile({
+      display_name: name.trim() || null,
+      neighborhood: neighborhood || null,
+      bio: bio.trim() || null,
+      kids_ages: selectedKids,
+      interests: selectedInterests,
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile saved! ✓" });
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50" onClick={onClose}>
-      <div
-        className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
+      <div className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 rounded-full bg-border mx-auto mt-3 mb-2 flex-shrink-0" />
-
-        {/* Header */}
         <div className="flex items-center justify-between px-5 pb-4 border-b border-border flex-shrink-0">
           <div>
             <h2 className="font-display font-black text-lg">Edit Profile</h2>
@@ -81,30 +91,14 @@ function EditSheet({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-          {/* Avatar */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative">
-              <div
-                className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black text-white shadow-soft"
-                style={{ backgroundColor: MY_PROFILE.avatarColor }}
-              >
-                {MY_PROFILE.avatar}
-              </div>
-              <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full gradient-primary flex items-center justify-center shadow-floating">
-                <Camera className="h-3.5 w-3.5 text-white" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">Tap to change photo</p>
-          </div>
-
           {/* Name */}
           <div>
-            <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">First name</label>
+            <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Display name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Your name…"
               className="w-full h-12 rounded-2xl bg-card border border-border px-4 text-sm font-semibold outline-none focus:border-primary transition-colors"
             />
           </div>
@@ -116,6 +110,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}
+              placeholder="Tell other moms about yourself…"
               className="w-full rounded-2xl bg-card border border-border px-4 py-3 text-sm font-semibold outline-none focus:border-primary transition-colors resize-none leading-relaxed"
             />
           </div>
@@ -129,9 +124,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
                   key={n}
                   onClick={() => setNeighborhood(n)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-sm font-semibold transition-all active:scale-[0.98] ${
-                    neighborhood === n
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground"
+                    neighborhood === n ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
                   }`}
                 >
                   {n}
@@ -145,20 +138,17 @@ function EditSheet({ onClose }: { onClose: () => void }) {
           <div>
             <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Kids' ages</label>
             <div className="flex flex-wrap gap-2">
-              {KIDS_AGES.map((age) => {
-                const sel = selectedKids.includes(age);
-                return (
-                  <button
-                    key={age}
-                    onClick={() => toggleKid(age)}
-                    className={`px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
-                      sel ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
-                    }`}
-                  >
-                    {age}
-                  </button>
-                );
-              })}
+              {KIDS_AGES.map((age) => (
+                <button
+                  key={age}
+                  onClick={() => toggleKid(age)}
+                  className={`px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
+                    selectedKids.includes(age) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+                  }`}
+                >
+                  {age}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -166,32 +156,29 @@ function EditSheet({ onClose }: { onClose: () => void }) {
           <div>
             <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Interests</label>
             <div className="flex flex-wrap gap-2">
-              {ALL_INTERESTS.map(({ emoji, label }) => {
-                const sel = selectedInterests.includes(label);
-                return (
-                  <button
-                    key={label}
-                    onClick={() => toggleInterest(label)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-xs font-bold transition-all active:scale-[0.96] ${
-                      sel ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
-                    }`}
-                  >
-                    <span>{emoji}</span>
-                    <span>{label}</span>
-                  </button>
-                );
-              })}
+              {ALL_INTERESTS.map(({ emoji, label }) => (
+                <button
+                  key={label}
+                  onClick={() => toggleInterest(label)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-xs font-bold transition-all active:scale-[0.96] ${
+                    selectedInterests.includes(label) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+                  }`}
+                >
+                  <span>{emoji}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-5 py-4 border-t border-border safe-area-bottom bg-background flex-shrink-0">
           <button
-            onClick={onClose}
-            className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base active:scale-[0.98] transition-all"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            Save Changes ✓
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : "Save Changes ✓"}
           </button>
         </div>
       </div>
@@ -203,65 +190,72 @@ function EditSheet({ onClose }: { onClose: () => void }) {
 export default function Profile() {
   const [showEdit, setShowEdit] = useState(false);
   const { user, signOut } = useAuth();
+  const { profile, loading } = useProfile();
   const navigate = useNavigate();
-  const p = MY_PROFILE;
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
-  const stats = [
-    { value: p.playdatesHosted, label: "Hosted" },
-    { value: p.playdatesAttended, label: "Attended" },
-    { value: p.connectionsCount, label: "Connections" },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const displayName = profile?.display_name ?? user?.email?.split("@")[0] ?? "Mom";
+  const initials = getInitials(displayName);
+  const avatarColor = user ? getAvatarColor(user.id) : "hsl(204 80% 62%)";
+  const neighborhood = profile?.neighborhood;
+  const bio = profile?.bio;
+  const kidsAges = profile?.kids_ages ?? [];
+  const interests = profile?.interests ?? [];
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : "—";
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Banner + avatar */}
+      {/* Banner */}
       <div className="relative h-32 gradient-banner">
         <div className="absolute -bottom-12 left-5">
           <div
             className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white border-4 border-background shadow-soft"
-            style={{ backgroundColor: p.avatarColor }}
+            style={{ backgroundColor: avatarColor }}
           >
-            {p.avatar}
+            {initials}
           </div>
-          {p.verified && (
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full gradient-primary flex items-center justify-center border-2 border-background">
-              <Shield className="h-3.5 w-3.5 text-white" fill="white" />
-            </div>
-          )}
         </div>
-        {/* Edit button top-right */}
         <button
           onClick={() => setShowEdit(true)}
           className="absolute top-4 right-4 flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-bold active:scale-[0.96] transition-all"
         >
-          <Edit2 className="h-3.5 w-3.5" />
-          Edit Profile
+          <Edit2 className="h-3.5 w-3.5" /> Edit Profile
         </button>
       </div>
 
       {/* Name + neighborhood */}
       <div className="px-5 pt-14 pb-4">
-        <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="font-display font-black text-2xl">{p.name}</h1>
-          {p.verified && <Shield className="h-4 w-4 text-primary" fill="currentColor" />}
-        </div>
+        <h1 className="font-display font-black text-2xl mb-0.5">{displayName}</h1>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>{p.neighborhood}</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>Member since {p.memberSince}</span>
+          {neighborhood && <><MapPin className="h-3.5 w-3.5" /><span>{neighborhood}</span><span className="text-muted-foreground/40">·</span></>}
+          <span>Member since {memberSince}</span>
         </div>
-        <p className="text-sm text-foreground/80 leading-relaxed">{p.bio}</p>
+        {bio ? (
+          <p className="text-sm text-foreground/80 leading-relaxed">{bio}</p>
+        ) : (
+          <button onClick={() => setShowEdit(true)} className="text-sm text-primary font-semibold underline-offset-2 hover:underline">
+            + Add a bio
+          </button>
+        )}
       </div>
 
       {/* Stats */}
       <div className="mx-4 mb-4 grid grid-cols-3 divide-x divide-border bg-card rounded-2xl border border-border shadow-card overflow-hidden">
-        {stats.map(({ value, label }) => (
+        {[{ value: 7, label: "Hosted" }, { value: 14, label: "Attended" }, { value: 12, label: "Connections" }].map(({ value, label }) => (
           <div key={label} className="flex flex-col items-center py-4">
             <span className="font-display font-black text-2xl text-primary">{value}</span>
             <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mt-0.5">{label}</span>
@@ -270,86 +264,64 @@ export default function Profile() {
       </div>
 
       {/* Kids' ages */}
-      <section className="px-4 mb-5">
-        <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Kids' Ages
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {p.kids.map((age) => (
-            <span
-              key={age}
-              className="px-4 py-2 rounded-2xl bg-secondary/30 border border-secondary/50 text-sm font-bold text-foreground"
-            >
-              🧒 {age}
-            </span>
-          ))}
-        </div>
-      </section>
+      {kidsAges.length > 0 && (
+        <section className="px-4 mb-5">
+          <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">Kids' Ages</h2>
+          <div className="flex flex-wrap gap-2">
+            {kidsAges.map((age) => (
+              <span key={age} className="px-4 py-2 rounded-2xl bg-secondary/30 border border-secondary/50 text-sm font-bold text-foreground">
+                🧒 {age}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Interests */}
-      <section className="px-4 mb-5">
-        <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Interests
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {p.interests.map((interest) => (
-            <span
-              key={interest}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary"
-            >
-              <span>{INTEREST_ICONS[interest] ?? "✨"}</span>
-              <span>{interest}</span>
-            </span>
-          ))}
-        </div>
-      </section>
+      {interests.length > 0 && (
+        <section className="px-4 mb-5">
+          <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">Interests</h2>
+          <div className="flex flex-wrap gap-2">
+            {interests.map((interest) => (
+              <span key={interest} className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+                <span>{INTEREST_ICONS[interest] ?? "✨"}</span>
+                <span>{interest}</span>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Availability */}
-      <section className="px-4 mb-5">
-        <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">
-          Availability
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {p.availability.map((slot) => (
-            <span
-              key={slot}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-accent border border-accent-foreground/10 text-xs font-bold text-foreground"
-            >
-              <span>{AVAILABILITY_ICONS[slot] ?? "🕐"}</span>
-              <span>{slot}</span>
-            </span>
-          ))}
+      {/* Empty state */}
+      {kidsAges.length === 0 && interests.length === 0 && (
+        <div className="mx-4 mb-5 p-5 rounded-2xl bg-card border border-dashed border-border text-center">
+          <p className="text-sm text-muted-foreground mb-3">Complete your profile to get matched with the best moms near you!</p>
+          <button
+            onClick={() => setShowEdit(true)}
+            className="px-5 py-2.5 rounded-xl gradient-primary text-white font-bold text-sm active:scale-[0.97] transition-all"
+          >
+            Complete Profile
+          </button>
         </div>
-      </section>
+      )}
 
-      {/* Edit profile button (bottom) */}
+      {/* Actions */}
       <div className="px-4 flex flex-col gap-3">
         <button
           onClick={() => setShowEdit(true)}
           className="w-full py-4 rounded-2xl border-2 border-primary text-primary font-bold text-base active:bg-primary/10 transition-all flex items-center justify-center gap-2"
         >
-          <Edit2 className="h-4 w-4" />
-          Edit Profile
+          <Edit2 className="h-4 w-4" /> Edit Profile
         </button>
-
-        {user && (
-          <button
-            onClick={handleSignOut}
-            className="w-full py-3.5 rounded-2xl border border-border bg-card text-muted-foreground font-bold text-sm active:bg-muted transition-all flex items-center justify-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
-        )}
-
-        {user && (
-          <p className="text-center text-xs text-muted-foreground pb-2">
-            Signed in as {user.email}
-          </p>
-        )}
+        <button
+          onClick={handleSignOut}
+          className="w-full py-3.5 rounded-2xl border border-border bg-card text-muted-foreground font-bold text-sm active:bg-muted transition-all flex items-center justify-center gap-2"
+        >
+          <LogOut className="h-4 w-4" /> Sign Out
+        </button>
+        {user && <p className="text-center text-xs text-muted-foreground pb-2">Signed in as {user.email}</p>}
       </div>
 
-      {/* Edit sheet */}
       {showEdit && <EditSheet onClose={() => setShowEdit(false)} />}
     </div>
   );
