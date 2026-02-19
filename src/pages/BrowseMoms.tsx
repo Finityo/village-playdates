@@ -1,10 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Heart, MessageCircle, Users, Shield, Star, Filter, Search, CheckCircle2, X, SlidersHorizontal } from "lucide-react";
+import { MapPin, Heart, MessageCircle, Users, Shield, Star, Search, CheckCircle2, X, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MOMS, MY_INTERESTS, INTEREST_ICONS, type Mom } from "@/data/moms";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
+import { useRealProfiles, type RealProfile } from "@/hooks/useRealProfiles";
+
+const AVATAR_COLORS = [
+  "hsl(142 38% 40%)", "hsl(12 82% 65%)", "hsl(204 80% 62%)",
+  "hsl(42 90% 60%)", "hsl(133 45% 50%)", "hsl(204 65% 55%)",
+];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getAvatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 
 const DISTANCE_OPTIONS = ["0.5 mi", "1 mi", "2 mi", "5 mi"];
 const AGE_GROUP_OPTIONS = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];
@@ -48,7 +67,8 @@ function kidAgeToGroupKey(age: string): string {
 }
 
 export default function BrowseMoms() {
-  const { profile } = useProfile();
+  const { profile: myProfile } = useProfile();
+  const { profiles: realProfiles, loading: realLoading } = useRealProfiles();
   const [moms, setMoms] = useState<Mom[]>(MOMS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedInterest, setSelectedInterest] = useState("All");
@@ -60,9 +80,9 @@ export default function BrowseMoms() {
 
   // Pre-populate filters from the user's real profile once it loads
   useEffect(() => {
-    if (filtersInitialized || !profile) return;
-    const profileInterests = profile.interests ?? [];
-    const profileKidsAges = profile.kids_ages ?? [];
+    if (filtersInitialized || !myProfile) return;
+    const profileInterests = myProfile.interests ?? [];
+    const profileKidsAges = myProfile.kids_ages ?? [];
     if (profileInterests.length > 0 || profileKidsAges.length > 0) {
       const preloaded: Filters = {
         distance: "",
@@ -74,7 +94,7 @@ export default function BrowseMoms() {
       setPendingFilters(preloaded);
     }
     setFiltersInitialized(true);
-  }, [profile, filtersInitialized]);
+  }, [myProfile, filtersInitialized]);
 
   const activeCount = countActiveFilters(filters);
 
@@ -211,6 +231,26 @@ export default function BrowseMoms() {
 
       {/* Results */}
       <div className="max-w-5xl mx-auto px-4 py-5">
+
+        {/* Real community members */}
+        {realProfiles.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-black uppercase tracking-wider text-primary mb-3">
+              🌸 Community Members ({realProfiles.length})
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {realProfiles.map((rp) => (
+                <RealProfileCard key={rp.id} profile={rp} myInterests={myProfile?.interests ?? []} />
+              ))}
+            </div>
+            <div className="border-t border-border mt-6 mb-4 pt-4">
+              <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                📋 Sample Profiles
+              </p>
+            </div>
+          </div>
+        )}
+
         <p className="text-sm font-semibold text-muted-foreground mb-4">
           {filtered.length} moms near you
           {activeCount > 0 && <span className="text-primary"> · {activeCount} filter{activeCount > 1 ? "s" : ""} active</span>}
@@ -222,7 +262,7 @@ export default function BrowseMoms() {
           ))}
         </div>
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && realProfiles.length === 0 && (
           <div className="text-center py-20">
             <div className="text-5xl mb-4">🌿</div>
             <h3 className="font-display text-xl font-bold mb-2">No moms found</h3>
@@ -236,6 +276,7 @@ export default function BrowseMoms() {
           </div>
         )}
       </div>
+
 
       {/* ── FILTER BOTTOM SHEET ── */}
       {showFilters && (
@@ -409,6 +450,76 @@ export default function BrowseMoms() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── REAL PROFILE CARD ─────────────────────────────────────
+function RealProfileCard({ profile, myInterests }: { profile: RealProfile; myInterests: string[] }) {
+  const initials = profile.display_name ? getInitials(profile.display_name) : "?";
+  const color = getAvatarColor(profile.id);
+  const interests = profile.interests ?? [];
+  const sharedCount = interests.filter((i) => myInterests.includes(i)).length;
+
+  return (
+    <div className="rounded-2xl border border-primary/30 bg-card shadow-card overflow-hidden">
+      <div className="h-1.5 gradient-primary" />
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary/20">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.display_name ?? "Member"} className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center text-sm font-black text-white"
+                style={{ backgroundColor: color }}
+              >
+                {initials}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-sm truncate">{profile.display_name ?? "Community Mom"}</span>
+              <span className="flex-shrink-0 text-[10px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Real</span>
+            </div>
+            {profile.neighborhood && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{profile.neighborhood}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {profile.bio && (
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">{profile.bio}</p>
+        )}
+
+        {sharedCount > 0 && (
+          <div className="flex items-center gap-1.5 mb-2 bg-primary/8 text-primary rounded-lg px-2.5 py-1.5">
+            <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+            <span className="text-xs font-bold">{sharedCount} shared interest{sharedCount > 1 ? "s" : ""}</span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-1 mb-3">
+          {interests.slice(0, 3).map((interest) => (
+            <Badge key={interest} variant="secondary" className="text-[10px] rounded-full font-semibold">
+              {INTEREST_ICONS[interest] ?? "🌸"} {interest}
+            </Badge>
+          ))}
+        </div>
+
+        {(profile.kids_ages ?? []).length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap">
+            <Users className="h-3 w-3 text-coral flex-shrink-0" />
+            {(profile.kids_ages ?? []).map((age) => (
+              <span key={age} className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded-full font-bold">{age}</span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

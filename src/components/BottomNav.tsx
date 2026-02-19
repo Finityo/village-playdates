@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 export default function BottomNav() {
   const location = useLocation();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { hasUnread, clearUnread } = useUnreadMessages();
   const [newMomBadge, setNewMomBadge] = useState(false);
   const joinedAtRef = useRef<string | null>(null);
 
@@ -56,12 +58,16 @@ export default function BottomNav() {
           const active = location.pathname === href ||
             (href === "/browse" && location.pathname.startsWith("/mom"));
           const showBadge = label === "Home" && newMomBadge && !active;
+          const showMsgBadge = label === "Messages" && hasUnread && !active;
 
           return (
             <Link
               key={href}
               to={href}
-              onClick={() => { if (label === "Home") setNewMomBadge(false); }}
+              onClick={() => {
+                if (label === "Home") setNewMomBadge(false);
+                if (label === "Messages") clearUnread();
+              }}
               className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
@@ -70,6 +76,9 @@ export default function BottomNav() {
                 <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.5 : 1.8} />
                 {showBadge && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-coral border border-background animate-pulse" />
+                )}
+                {showMsgBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-destructive border border-background animate-pulse" />
                 )}
               </div>
               <span className={`text-[9px] font-bold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
