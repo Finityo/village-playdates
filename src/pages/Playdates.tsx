@@ -8,6 +8,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { MiniMap } from "@/components/MiniMap";
 
 // ── TYPES ────────────────────────────────────────────────
 interface AttendeeProfile {
@@ -28,19 +29,19 @@ interface Playdate {
   attendees?: AttendeeProfile[];
 }
 
-const PARKS = [
-  "Landa Park",
-  "Hinman Island Park",
-  "Fischer Park",
-  "Cypress Bend Park",
-  "Solms Park",
-  "Dry Comal Creek Greenbelt",
-  "West Side Community Park",
-  "McQueeney Park",
-  "Gruene River Park",
-  "Comal River Tube Chute",
-  "Panther Canyon Nature Trail",
-  "Wurstfest Grounds",
+const PARKS: { name: string; lat: number; lng: number }[] = [
+  { name: "Landa Park",                  lat: 29.7085, lng: -98.1274 },
+  { name: "Hinman Island Park",          lat: 29.7072, lng: -98.1235 },
+  { name: "Fischer Park",                lat: 29.7198, lng: -98.1421 },
+  { name: "Cypress Bend Park",           lat: 29.7312, lng: -98.1056 },
+  { name: "Solms Park",                  lat: 29.6890, lng: -98.1150 },
+  { name: "Dry Comal Creek Greenbelt",   lat: 29.7260, lng: -98.1320 },
+  { name: "West Side Community Park",    lat: 29.7010, lng: -98.1450 },
+  { name: "McQueeney Park",              lat: 29.6008, lng: -97.9870 },
+  { name: "Gruene River Park",           lat: 29.7400, lng: -98.1060 },
+  { name: "Comal River Tube Chute",      lat: 29.7035, lng: -98.1205 },
+  { name: "Panther Canyon Nature Trail", lat: 29.7550, lng: -98.1400 },
+  { name: "Wurstfest Grounds",           lat: 29.7120, lng: -98.1180 },
 ];
 
 const TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"];
@@ -244,6 +245,8 @@ function PlanSheet({
     onClose();
   };
 
+  const selectedParkData = PARKS.find((p) => p.name === selectedPark);
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50" onClick={onClose}>
       <div
@@ -276,19 +279,29 @@ function PlanSheet({
           {/* Step 0: Park */}
           {step === 0 && (
             <div className="space-y-2 pb-4">
+              {/* Mini map preview when a park is selected */}
+              {selectedParkData && (
+                <div className="mb-3">
+                  <MiniMap
+                    lat={selectedParkData.lat}
+                    lng={selectedParkData.lng}
+                    parkName={selectedParkData.name}
+                  />
+                </div>
+              )}
               {PARKS.map((park) => (
                 <button
-                  key={park}
-                  onClick={() => setSelectedPark(park)}
+                  key={park.name}
+                  onClick={() => setSelectedPark(park.name)}
                   className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.98] ${
-                    selectedPark === park ? "border-primary bg-primary/10" : "border-border bg-card"
+                    selectedPark === park.name ? "border-primary bg-primary/10" : "border-border bg-card"
                   }`}
                 >
-                  <MapPin className={`h-4 w-4 flex-shrink-0 ${selectedPark === park ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${selectedPark === park ? "text-primary" : "text-foreground"}`}>
-                    {park}
+                  <MapPin className={`h-4 w-4 flex-shrink-0 ${selectedPark === park.name ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-semibold ${selectedPark === park.name ? "text-primary" : "text-foreground"}`}>
+                    {park.name}
                   </span>
-                  {selectedPark === park && (
+                  {selectedPark === park.name && (
                     <div className="ml-auto w-5 h-5 rounded-full gradient-primary flex items-center justify-center">
                       <span className="text-white text-[10px] font-black">✓</span>
                     </div>
