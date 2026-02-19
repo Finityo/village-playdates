@@ -29,10 +29,18 @@ interface Playdate {
 }
 
 const PARKS = [
-  "Riverside Park", "Oakwood Playground", "Sunfield Common",
-  "Maplewood Sports Park", "Heritage Trail", "Lotus Park",
-  "Nature Discovery Park", "Harbor Splash Pad", "Bayfront Park",
-  "Cedarwood Green",
+  "Landa Park",
+  "Hinman Island Park",
+  "Fischer Park",
+  "Cypress Bend Park",
+  "Solms Park",
+  "Dry Comal Creek Greenbelt",
+  "West Side Community Park",
+  "McQueeney Park",
+  "Gruene River Park",
+  "Comal River Tube Chute",
+  "Panther Canyon Nature Trail",
+  "Wurstfest Grounds",
 ];
 
 const TIMES = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"];
