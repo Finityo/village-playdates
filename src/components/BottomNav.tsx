@@ -43,7 +43,7 @@ export default function BottomNav() {
   }, [user, profile?.neighborhood]);
 
   const tabs = [
-    { label: "Home", icon: Home, href: "/" },
+    { label: "Home", icon: Home, href: "/dashboard" },
     { label: "Browse", icon: Search, href: "/browse" },
     { label: "Playdates", icon: Calendar, href: "/playdates" },
     { label: "Map", icon: Map, href: "/map" },
