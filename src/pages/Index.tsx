@@ -1,44 +1,350 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles, MapPin, ChevronRight, LogOut } from "lucide-react";
+import {
+  Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles,
+  MapPin, ChevronRight, Calendar, Clock, MessageCircle, Heart,
+  Zap, Bell
+} from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/hooks/useAuth";
+import { MOMS, INTEREST_ICONS } from "@/data/moms";
 
+// ── STATIC DATA (marketing page) ────────────────────────
 const howItWorks = [
   { icon: "🌸", title: "Create Your Profile", desc: "Share your neighborhood, kids' ages, interests, and schedule.", color: "hsl(142 38% 40%)" },
   { icon: "🔍", title: "Browse & Filter", desc: "Find moms by distance, kids' ages, and shared interests.", color: "hsl(12 82% 65%)" },
   { icon: "💬", title: "Connect & Chat", desc: "Icebreakers make it easy. Only mutual matches can message.", color: "hsl(204 80% 62%)" },
   { icon: "🛝", title: "Plan a Playdate", desc: "Pick a public park, confirm times, get reminders.", color: "hsl(42 90% 60%)" },
 ];
-
 const safetyFeatures = [
   "ID verification required",
   "Mutual match before messaging",
   "Public meeting spot suggestions",
   "No children's photos policy",
 ];
-
 const testimonials = [
   { name: "Rachel H.", neighborhood: "Oak Park", text: "Found my best mom-friend in two weeks! Our kids are inseparable now.", kids: "Mom of 2 (ages 3 & 5)", avatar: "RH", color: "hsl(142 38% 40%)" },
   { name: "Destiny L.", neighborhood: "Midtown", text: "Finally an app where I feel safe meeting new people. ID verification gave me peace of mind.", kids: "Mom of 1 (age 2)", avatar: "DL", color: "hsl(12 82% 65%)" },
   { name: "Mei C.", neighborhood: "Lakeside", text: "We have a group of 6 moms that meets every Saturday. MomCircle built our village!", kids: "Mom of 2 (ages 4 & 6)", avatar: "MC", color: "hsl(204 80% 62%)" },
 ];
 
-export default function Index() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+// ── UPCOMING PLAYDATES (feed preview data) ───────────────
+const UPCOMING_FEED = [
+  {
+    id: 1,
+    park: "Riverside Park",
+    date: "Wed, Feb 19",
+    time: "10:00 AM",
+    emoji: "🌿",
+    attendees: [
+      { avatar: "JM", color: "hsl(142 38% 40%)" },
+      { avatar: "ME", color: "hsl(204 80% 62%)" },
+    ],
+  },
+  {
+    id: 2,
+    park: "Cedarwood Green",
+    date: "Sat, Feb 22",
+    time: "9:00 AM",
+    emoji: "🧘",
+    attendees: [
+      { avatar: "PT", color: "hsl(42 90% 60%)" },
+      { avatar: "AK", color: "hsl(12 82% 65%)" },
+      { avatar: "ME", color: "hsl(204 80% 62%)" },
+    ],
+  },
+];
+
+// ── QUICK-CONNECT NUDGE MESSAGES ─────────────────────────
+const NUDGES = [
+  { emoji: "💌", text: "Amara replied to your icebreaker!", href: "/messages", cta: "Reply now" },
+  { emoji: "🎉", text: "2 new moms joined your neighborhood this week!", href: "/browse", cta: "Say hello" },
+  { emoji: "📅", text: "Your playdate at Riverside Park is tomorrow!", href: "/playdates", cta: "View details" },
+];
+
+// ── GREETING helper ──────────────────────────────────────
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getFirstName(email: string): string {
+  // If email like "jessica.m@gmail.com" return "Jessica"
+  const local = email.split("@")[0].replace(/[._\-+]/g, " ");
+  const first = local.split(" ")[0];
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+// ── HOME FEED (logged-in view) ────────────────────────────
+function HomeFeed({ userEmail }: { userEmail: string }) {
+  const firstName = getFirstName(userEmail);
+  const greeting = getGreeting();
+  const nearbyMoms = MOMS.slice(0, 5);
+  const nudge = NUDGES[0];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-28">
 
+      {/* ── PERSONALIZED HEADER ───────────────────────── */}
+      <div className="gradient-hero px-5 pt-12 pb-6 safe-area-top">
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <p className="text-xs font-bold text-primary/70 uppercase tracking-widest mb-0.5">{greeting} 👋</p>
+            <h1 className="font-display font-black text-2xl leading-tight">
+              Hey, {firstName}!
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Your village is waiting</p>
+          </div>
+          {/* Notification bell */}
+          <button className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card">
+            <Bell className="h-5 w-5 text-foreground" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">3</span>
+          </button>
+        </div>
+
+        {/* Quick stats row */}
+        <div className="flex gap-2 mt-4">
+          {[
+            { label: "Connections", value: "8", icon: "👯" },
+            { label: "Playdates", value: "2", icon: "📅" },
+            { label: "Messages", value: "3", icon: "💬" },
+          ].map((stat) => (
+            <div key={stat.label} className="flex-1 bg-card/70 rounded-2xl px-3 py-2.5 border border-border/60 text-center shadow-card">
+              <div className="text-base mb-0.5">{stat.icon}</div>
+              <div className="font-display font-black text-lg leading-none text-foreground">{stat.value}</div>
+              <div className="text-[9px] text-muted-foreground font-semibold mt-0.5">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── QUICK-CONNECT NUDGE ───────────────────────── */}
+      <div className="px-4 -mt-1 pt-4">
+        <Link
+          to={nudge.href}
+          className="flex items-center gap-3 bg-card rounded-2xl border border-primary/20 p-4 shadow-soft active:scale-[0.98] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 text-lg shadow-soft">
+            {nudge.emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold leading-tight text-foreground">{nudge.text}</p>
+          </div>
+          <div className="flex items-center gap-1 text-primary font-bold text-xs flex-shrink-0">
+            {nudge.cta}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </div>
+        </Link>
+      </div>
+
+      {/* ── NEARBY MOMS CAROUSEL ──────────────────────── */}
+      <section className="pt-6">
+        <div className="flex items-center justify-between px-4 mb-3">
+          <div>
+            <h2 className="font-display font-black text-lg">Moms Near You</h2>
+            <p className="text-xs text-muted-foreground">Matched by shared interests</p>
+          </div>
+          <Link to="/browse" className="text-primary text-sm font-bold flex items-center gap-0.5">
+            See all <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {/* Horizontal scroll */}
+        <div className="flex gap-3 overflow-x-auto pb-3 -mx-0 px-4 hide-scrollbar">
+          {nearbyMoms.map((mom) => {
+            const sharedInterests = mom.interests.filter(i =>
+              ["Outdoor play", "Arts & Crafts", "Nature walks", "Books & Storytime", "Sensory play"].includes(i)
+            );
+            return (
+              <Link
+                key={mom.id}
+                to={`/mom/${mom.id}`}
+                className="flex-shrink-0 w-40 bg-card rounded-2xl border border-border shadow-card overflow-hidden active:scale-[0.97] transition-all"
+              >
+                {/* Avatar header */}
+                <div
+                  className="h-20 flex items-center justify-center relative"
+                  style={{ backgroundColor: mom.avatarColor + "22" }}
+                >
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-soft"
+                    style={{ backgroundColor: mom.avatarColor }}
+                  >
+                    {mom.avatar}
+                  </div>
+                  {mom.verified && (
+                    <div className="absolute bottom-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-soft">
+                      <Shield className="h-2.5 w-2.5 text-white" fill="white" />
+                    </div>
+                  )}
+                  {sharedInterests.length > 0 && (
+                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-primary/90 flex items-center gap-0.5">
+                      <Heart className="h-2 w-2 text-white" fill="white" />
+                      <span className="text-[9px] font-black text-white">{sharedInterests.length}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="p-3">
+                  <p className="font-display font-black text-xs leading-tight mb-0.5">{mom.name}</p>
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mb-1.5">
+                    <MapPin className="h-2.5 w-2.5" />{mom.distance}
+                  </p>
+                  {/* Shared interest chips (max 2) */}
+                  {sharedInterests.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {sharedInterests.slice(0, 2).map(interest => (
+                        <span
+                          key={interest}
+                          className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full"
+                        >
+                          {INTEREST_ICONS[interest]} {interest.split(" ")[0]}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* "Browse more" end card */}
+          <Link
+            to="/browse"
+            className="flex-shrink-0 w-40 bg-card rounded-2xl border border-dashed border-primary/40 shadow-card flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition-all p-4"
+          >
+            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-soft">
+              <Users className="h-5 w-5 text-white" />
+            </div>
+            <p className="text-xs font-bold text-primary text-center leading-tight">Browse all moms</p>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── UPCOMING PLAYDATES PREVIEW ────────────────── */}
+      <section className="px-4 pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="font-display font-black text-lg">Your Playdates</h2>
+            <p className="text-xs text-muted-foreground">{UPCOMING_FEED.length} upcoming this week</p>
+          </div>
+          <Link to="/playdates" className="text-primary text-sm font-bold flex items-center gap-0.5">
+            All <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="space-y-3">
+          {UPCOMING_FEED.map((pd) => (
+            <Link
+              key={pd.id}
+              to="/playdates"
+              className="flex items-center gap-4 bg-card rounded-2xl border border-border p-4 shadow-card active:scale-[0.98] transition-all"
+            >
+              {/* Date badge */}
+              <div className="w-12 h-12 rounded-xl gradient-primary flex flex-col items-center justify-center flex-shrink-0 shadow-soft">
+                <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
+                  {pd.date.split(",")[0]}
+                </span>
+                <span className="text-lg font-black text-white leading-none">
+                  {pd.date.split(" ")[2]}
+                </span>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
+                  <p className="font-display font-black text-sm truncate">{pd.park}</p>
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {pd.time} {pd.emoji}
+                </p>
+                {/* Attendee stack */}
+                <div className="flex items-center mt-2">
+                  {pd.attendees.map((a, i) => (
+                    <div
+                      key={i}
+                      className="w-5 h-5 rounded-full border-2 border-card flex items-center justify-center text-[8px] font-black text-white"
+                      style={{ backgroundColor: a.color, marginLeft: i > 0 ? "-4px" : 0, zIndex: pd.attendees.length - i }}
+                    >
+                      {a.avatar[0]}
+                    </div>
+                  ))}
+                  <span className="ml-2 text-[10px] text-muted-foreground font-semibold">{pd.attendees.length} going</span>
+                </div>
+              </div>
+
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </Link>
+          ))}
+
+          {/* Plan new playdate CTA */}
+          <Link
+            to="/playdates"
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-bold text-sm active:bg-primary/5 transition-all"
+          >
+            <Calendar className="h-4 w-4" />
+            Plan a new playdate
+          </Link>
+        </div>
+      </section>
+
+      {/* ── EXTRA NUDGE ROW ───────────────────────────── */}
+      <section className="px-4 pt-6">
+        <h2 className="font-display font-black text-lg mb-3">Stay Connected</h2>
+        <div className="space-y-3">
+          {NUDGES.slice(1).map((nudge, i) => (
+            <Link
+              key={i}
+              to={nudge.href}
+              className="flex items-center gap-3 bg-card rounded-2xl border border-border p-4 shadow-card active:scale-[0.98] transition-all"
+            >
+              <div className="w-9 h-9 rounded-xl bg-secondary/20 flex items-center justify-center text-lg flex-shrink-0">
+                {nudge.emoji}
+              </div>
+              <p className="flex-1 text-sm font-semibold text-foreground">{nudge.text}</p>
+              <div className="flex items-center gap-1 text-primary font-bold text-xs flex-shrink-0">
+                {nudge.cta}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── COMPLETE YOUR PROFILE BANNER ──────────────── */}
+      <section className="mx-4 mt-6 mb-2 rounded-3xl bg-card border border-border shadow-card overflow-hidden">
+        <div className="gradient-hero px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-xs font-black uppercase tracking-widest text-primary">Profile tip</span>
+          </div>
+          <p className="font-display font-black text-base mb-1">Add your availability schedule</p>
+          <p className="text-xs text-muted-foreground mb-3">Moms are 3× more likely to connect when schedules are visible.</p>
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-primary text-white font-bold text-xs shadow-soft active:scale-[0.97] transition-all"
+          >
+            Update Profile <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      </section>
+
+    </div>
+  );
+}
+
+// ── MARKETING PAGE (logged-out view) ────────────────────
+function MarketingPage() {
+  return (
+    <div className="min-h-screen bg-background">
       {/* ── HERO ─────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        {/* Full-bleed image */}
         <div className="relative h-72 md:h-96">
           <img src={heroImage} alt="Moms at the park" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-background" />
         </div>
-
-        {/* Copy below image */}
         <div className="px-5 pt-4 pb-8 gradient-hero">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 border border-primary/20">
             <Sparkles className="h-3 w-3" />
@@ -51,34 +357,21 @@ export default function Index() {
           <p className="text-base text-muted-foreground leading-relaxed mb-6">
             Connect with moms in your neighborhood based on your kids' ages, shared interests, and schedule.
           </p>
-
-          {user ? (
+          <div className="flex flex-col gap-3">
             <Link
-              to="/browse"
+              to="/signup"
               className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
             >
-              Find Moms Near You
+              Get Started — It's Free
               <ArrowRight className="h-4 w-4" />
             </Link>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <Link
-                to="/signup"
-                className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base shadow-soft active:scale-[0.98] transition-all"
-              >
-                Get Started — It's Free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/login"
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-primary text-primary font-bold text-base active:scale-[0.98] transition-all"
-              >
-                Sign In
-              </Link>
-            </div>
-          )}
-
-          {/* Trust row */}
+            <Link
+              to="/login"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-primary text-primary font-bold text-base active:scale-[0.98] transition-all"
+            >
+              Sign In
+            </Link>
+          </div>
           <div className="flex items-center justify-around mt-6 pt-5 border-t border-border">
             <div className="flex flex-col items-center gap-1">
               <Shield className="h-5 w-5 text-primary" />
@@ -93,76 +386,6 @@ export default function Index() {
               <span className="text-xs font-bold">4.9 rating</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── QUICK ACTIONS ────────────────────────────── */}
-      <section className="px-4 py-6">
-        <h2 className="font-display font-black text-lg mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: "🔍", label: "Browse Moms", sub: "Near you", href: "/browse", color: "bg-primary/10" },
-            { icon: "📅", label: "Plan Playdate", sub: "Book a spot", href: "/playdates", color: "bg-secondary/20" },
-            { icon: "💬", label: "Messages", sub: "3 unread", href: "/messages", color: "bg-coral/10" },
-            { icon: "👥", label: "My Village", sub: "8 connections", href: "/browse", color: "bg-sky/10" },
-          ].map((a) => (
-            <Link
-              key={a.label}
-              to={a.href}
-              className={`${a.color} rounded-2xl p-4 flex flex-col gap-2 active:scale-[0.97] transition-all border border-border/50`}
-            >
-              <span className="text-2xl">{a.icon}</span>
-              <div>
-                <p className="font-bold text-sm">{a.label}</p>
-                <p className="text-xs text-muted-foreground">{a.sub}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── NEARBY MOMS PREVIEW ──────────────────────── */}
-      <section className="px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-black text-lg">Moms Near You</h2>
-          <Link to="/browse" className="text-primary text-sm font-bold flex items-center gap-0.5">
-            See all <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        {/* Horizontal scroll cards */}
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-          {[
-            { avatar: "JM", name: "Jessica M.", dist: "0.4 mi", kids: "3 & 5 yrs", color: "hsl(142 38% 40%)", verified: true },
-            { avatar: "AK", name: "Amara K.", dist: "0.9 mi", kids: "2 yrs", color: "hsl(12 82% 65%)", verified: true },
-            { avatar: "SR", name: "Sofia R.", dist: "1.2 mi", kids: "4 & 7 yrs", color: "hsl(204 80% 62%)", verified: false },
-            { avatar: "PT", name: "Priya T.", dist: "1.8 mi", kids: "1 & 3 yrs", color: "hsl(42 90% 60%)", verified: true },
-          ].map((m, i) => (
-            <Link
-              key={m.avatar}
-              to={`/mom/${i + 1}`}
-              className="flex-shrink-0 w-36 bg-card rounded-2xl border border-border p-4 shadow-card active:scale-[0.97] transition-all"
-            >
-              <div className="relative mb-3">
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black text-white shadow-soft"
-                  style={{ backgroundColor: m.color }}
-                >
-                  {m.avatar}
-                </div>
-                {m.verified && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <Shield className="h-2.5 w-2.5 text-white" fill="white" />
-                  </div>
-                )}
-              </div>
-              <p className="font-bold text-xs leading-tight mb-1">{m.name}</p>
-              <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                <MapPin className="h-2.5 w-2.5" />{m.dist}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Kids: {m.kids}</p>
-            </Link>
-          ))}
         </div>
       </section>
 
@@ -207,7 +430,7 @@ export default function Index() {
       {/* ── TESTIMONIALS ─────────────────────────────── */}
       <section className="px-4 py-4">
         <h2 className="font-display font-black text-lg mb-4">Moms Love MomCircle</h2>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
           {testimonials.map((t) => (
             <div key={t.name} className="flex-shrink-0 w-72 bg-card rounded-2xl p-5 border border-border shadow-card">
               <div className="flex gap-0.5 mb-3">
@@ -258,4 +481,15 @@ export default function Index() {
       </footer>
     </div>
   );
+}
+
+// ── ROOT ─────────────────────────────────────────────────
+export default function Index() {
+  const { user } = useAuth();
+
+  if (user) {
+    return <HomeFeed userEmail={user.email ?? "mom"} />;
+  }
+
+  return <MarketingPage />;
 }
