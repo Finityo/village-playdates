@@ -145,6 +145,8 @@ function PlaydateCard({
 }) {
   const isGoing = userId ? pd.rsvps.some((r) => r.user_id === userId) : false;
   const isOwn = userId === pd.creator_id;
+  const [showMap, setShowMap] = useState(false);
+  const parkData = PARKS.find((p) => p.name === pd.park);
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
@@ -176,6 +178,23 @@ function PlaydateCard({
           </div>
         </div>
       </div>
+
+      {/* Mini map preview (only if coordinates are known) */}
+      {parkData && (
+        <div>
+          {showMap ? (
+            <MiniMap lat={parkData.lat} lng={parkData.lng} parkName={parkData.name} />
+          ) : (
+            <button
+              onClick={() => setShowMap(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors border-b border-border"
+            >
+              <MapPin className="h-3 w-3" /> Show map
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="px-4 py-4 space-y-3">
         <p className="text-sm text-foreground leading-relaxed">{pd.description || "No description added."}</p>
         <div className="flex items-center gap-4">
@@ -223,13 +242,17 @@ function PlanSheet({
 }) {
   const [step, setStep] = useState(initialPark ? 1 : 0);
   const [selectedPark, setSelectedPark] = useState(initialPark ?? "");
+  const [customPark, setCustomPark] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const effectivePark = showCustomInput ? customPark.trim() : selectedPark;
+
   const canNext = [
-    selectedPark !== "",
+    effectivePark !== "",
     selectedDate !== undefined && selectedTime !== "",
     true,
   ];
@@ -240,7 +263,7 @@ function PlanSheet({
     if (!selectedDate) return;
     setSaving(true);
     const dateLabel = format(selectedDate, "EEE, MMM d");
-    await onConfirm(selectedPark, dateLabel, selectedTime, description);
+    await onConfirm(effectivePark, dateLabel, selectedTime, description);
     setSaving(false);
     onClose();
   };
@@ -280,7 +303,7 @@ function PlanSheet({
           {step === 0 && (
             <div className="space-y-2 pb-4">
               {/* Mini map preview when a park is selected */}
-              {selectedParkData && (
+              {selectedParkData && !showCustomInput && (
                 <div className="mb-3">
                   <MiniMap
                     lat={selectedParkData.lat}
@@ -289,7 +312,7 @@ function PlanSheet({
                   />
                 </div>
               )}
-              {PARKS.map((park) => (
+              {!showCustomInput && PARKS.map((park) => (
                 <button
                   key={park.name}
                   onClick={() => setSelectedPark(park.name)}
@@ -308,6 +331,36 @@ function PlanSheet({
                   )}
                 </button>
               ))}
+
+              {/* Custom park option */}
+              {!showCustomInput ? (
+                <button
+                  onClick={() => { setShowCustomInput(true); setSelectedPark(""); }}
+                  className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-dashed border-primary/40 bg-card transition-all active:scale-[0.98]"
+                >
+                  <Plus className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-sm font-semibold text-primary">Enter a different park…</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={customPark}
+                      onChange={(e) => setCustomPark(e.target.value)}
+                      placeholder="e.g. Schlitterbahn Park, River Road…"
+                      className="flex-1 rounded-2xl border border-primary bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground"
+                    />
+                    <button
+                      onClick={() => { setShowCustomInput(false); setCustomPark(""); }}
+                      className="p-2.5 rounded-xl border border-border bg-card text-muted-foreground active:bg-muted transition-all"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground px-1">Type any park or location name</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -374,7 +427,7 @@ function PlanSheet({
                 className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm resize-none outline-none focus:ring-2 focus:ring-primary/40 transition placeholder:text-muted-foreground"
               />
               <div className="bg-primary/8 rounded-2xl border border-primary/20 p-4 space-y-1">
-                <p className="text-xs font-black text-primary">📍 {selectedPark}</p>
+                <p className="text-xs font-black text-primary">📍 {effectivePark}</p>
                 <p className="text-xs text-muted-foreground">
                   {selectedDate && format(selectedDate, "EEEE, MMMM d")} at {selectedTime}
                 </p>
