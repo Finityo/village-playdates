@@ -145,7 +145,6 @@ function PlaydateCard({
 }) {
   const isGoing = userId ? pd.rsvps.some((r) => r.user_id === userId) : false;
   const isOwn = userId === pd.creator_id;
-  const [showMap, setShowMap] = useState(false);
   const parkData = PARKS.find((p) => p.name === pd.park);
 
   return (
@@ -179,20 +178,9 @@ function PlaydateCard({
         </div>
       </div>
 
-      {/* Mini map preview (only if coordinates are known) */}
+      {/* Mini map preview — always visible when coordinates are known */}
       {parkData && (
-        <div>
-          {showMap ? (
-            <MiniMap lat={parkData.lat} lng={parkData.lng} parkName={parkData.name} />
-          ) : (
-            <button
-              onClick={() => setShowMap(true)}
-              className="w-full flex items-center justify-center gap-1.5 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors border-b border-border"
-            >
-              <MapPin className="h-3 w-3" /> Show map
-            </button>
-          )}
-        </div>
+        <MiniMap lat={parkData.lat} lng={parkData.lng} parkName={parkData.name} />
       )}
 
       <div className="px-4 py-4 space-y-3">
