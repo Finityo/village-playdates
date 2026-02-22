@@ -23,7 +23,7 @@ export default function Signup() {
       password,
       options: {
         data: { display_name: name.trim() },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: window.location.origin + '/dashboard',
       },
     });
     setLoading(false);
@@ -33,7 +33,7 @@ export default function Signup() {
     } else {
       toast({
         title: "Account created! 🌸",
-        description: "Check your email to confirm your account, then sign in.",
+        description: "Check your email (including spam/junk folder) to confirm your account, then sign in.",
       });
       navigate("/login");
     }

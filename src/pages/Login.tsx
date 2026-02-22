@@ -11,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +25,22 @@ export default function Login() {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
       navigate("/dashboard");
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) {
+      toast({ title: "Enter your email", description: "Type your email address above, then tap resend.", variant: "destructive" });
+      return;
+    }
+    setResending(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+    setResending(false);
+
+    if (error) {
+      toast({ title: "Couldn't resend", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Verification email sent! 📬", description: "Check your inbox and spam/junk folder." });
     }
   };
 
@@ -85,6 +102,17 @@ export default function Login() {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={resending}
+            className="text-sm text-primary font-semibold hover:underline disabled:opacity-50"
+          >
+            {resending ? "Sending…" : "Didn't get a verification email? Resend"}
+          </button>
+        </div>
 
         <div className="mt-auto pb-8 text-center">
           <p className="text-sm text-muted-foreground">
