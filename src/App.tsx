@@ -17,6 +17,8 @@ import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import MapPage from "./pages/Map";
 import BottomNav from "./components/BottomNav";
@@ -26,7 +28,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const queryClient = new QueryClient();
 
 // Pages that suppress the shell nav (top bar + bottom nav)
-const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/privacy", "/safety", "/terms", "/"];
+const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/forgot-password", "/reset-password", "/privacy", "/safety", "/terms", "/"];
 
 function Layout() {
   const location = useLocation();
@@ -53,7 +55,8 @@ function Layout() {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/safety" element={<Safety />} />
           <Route path="/terms" element={<Terms />} />
