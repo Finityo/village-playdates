@@ -24,6 +24,7 @@ import MapPage from "./pages/Map";
 import BottomNav from "./components/BottomNav";
 import MobileTopBar from "./components/MobileTopBar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { usePlaydateNotifications } from "./hooks/usePlaydateNotifications";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", 
 
 function Layout() {
   const location = useLocation();
+  usePlaydateNotifications();
   // "/" is always the public landing — suppress nav shell on it too
   const suppressShell = SHELL_SUPPRESSED_ROUTES.some(r =>
     r === "/" ? location.pathname === "/" : location.pathname.startsWith(r)

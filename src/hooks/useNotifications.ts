@@ -115,5 +115,24 @@ export function useNotifications() {
     } as ScheduleOptions);
   }, []);
 
-  return { notifyNewMessage, schedulePlaydateReminder, notifyNewMatch, notifyRsvp };
+  /** Notify attendee about a playdate change (update or cancellation) */
+  const notifyPlaydateChange = useCallback(async (title: string, body: string) => {
+    const granted = await requestPermissions();
+    if (!granted) return;
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: nextId(),
+          title,
+          body,
+          smallIcon: "ic_stat_icon_config_sample",
+          iconColor: "#3d8b5e",
+          extra: { type: "playdate_change" },
+        },
+      ],
+    } as ScheduleOptions);
+  }, []);
+
+  return { notifyNewMessage, schedulePlaydateReminder, notifyNewMatch, notifyRsvp, notifyPlaydateChange };
 }
