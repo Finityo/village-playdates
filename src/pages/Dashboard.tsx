@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { MOMS, INTEREST_ICONS } from "@/data/moms";
 import { UserAvatar } from "@/components/UserAvatar";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 // ── STATIC DATA ───────────────────────────────────────────
 const UPCOMING_FEED = [
@@ -42,6 +43,7 @@ function getInitials(name: string): string {
 export default function Dashboard() {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
+  const unreadNotifCount = useUnreadNotifications();
 
   const greeting = getGreeting();
   const displayName = profile?.display_name
@@ -92,9 +94,13 @@ export default function Dashboard() {
           {/* Avatar + bell */}
           <div className="flex items-center gap-2">
             <UserAvatar avatarUrl={avatarUrl} displayName={firstName} userId={user?.id} size="sm" className="shadow-soft" />
-            <Link to="/messages" className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card active:bg-muted transition-colors">
+            <Link to="/notifications" className="relative w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-card active:bg-muted transition-colors">
               <Bell className="h-5 w-5 text-foreground" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">3</span>
+              {unreadNotifCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-coral flex items-center justify-center text-[9px] font-black text-white">
+                  {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

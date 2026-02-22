@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import MapPage from "./pages/Map";
 import BottomNav from "./components/BottomNav";
@@ -29,7 +30,7 @@ import { usePlaydateNotifications } from "./hooks/usePlaydateNotifications";
 const queryClient = new QueryClient();
 
 // Pages that suppress the shell nav (top bar + bottom nav)
-const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/login", "/signup", "/forgot-password", "/reset-password", "/privacy", "/safety", "/terms", "/"];
+const SHELL_SUPPRESSED_ROUTES = ["/mom/", "/onboarding", "/messages", "/notifications", "/login", "/signup", "/forgot-password", "/reset-password", "/privacy", "/safety", "/terms", "/"];
 
 function Layout() {
   const location = useLocation();
@@ -68,6 +69,7 @@ function Layout() {
           <Route path="/browse" element={<ProtectedRoute><BrowseMoms /></ProtectedRoute>} />
           <Route path="/mom/:id" element={<ProtectedRoute><MomProfile /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/playdates" element={<ProtectedRoute><Playdates /></ProtectedRoute>} />
           <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
