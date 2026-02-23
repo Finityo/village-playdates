@@ -71,7 +71,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-
+  const [showSuccess, setShowSuccess] = useState(false);
   const [name, setName] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [bio, setBio] = useState("");
@@ -107,14 +107,17 @@ function EditSheet({ onClose }: { onClose: () => void }) {
     if (result?.error) {
       toast({ title: "Couldn't save", description: result.error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile saved! ✓" });
-      onClose();
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 1200);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/50" onClick={onClose}>
-      <div className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col relative" onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 rounded-full bg-border mx-auto mt-3 mb-2 flex-shrink-0" />
         <div className="flex items-center justify-between px-5 pb-4 border-b border-border flex-shrink-0">
           <div>
@@ -210,12 +213,25 @@ function EditSheet({ onClose }: { onClose: () => void }) {
         <div className="px-5 py-4 border-t border-border safe-area-bottom bg-background flex-shrink-0">
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || showSuccess}
             className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : "Save Changes ✓"}
           </button>
         </div>
+
+        {/* Success overlay */}
+        {showSuccess && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/95 rounded-t-3xl animate-fade-in z-10">
+            <div className="animate-scale-in">
+              <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-10 w-10 text-primary" />
+              </div>
+            </div>
+            <p className="font-display font-black text-xl animate-fade-in">Profile Saved!</p>
+            <p className="text-sm text-muted-foreground mt-1 animate-fade-in">Your changes are live ✨</p>
+          </div>
+        )}
       </div>
     </div>
   );
