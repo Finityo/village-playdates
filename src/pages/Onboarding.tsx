@@ -47,18 +47,20 @@ const PRESET_AVATARS = [
 // ── STEP 1: Name ─────────────────────────────────────────
 function StepName({ value, onChange, onNext }: { value: string; onChange: (v: string) => void; onNext: () => void }) {
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">👋</div>
-      <h2 className="font-display font-black text-3xl mb-2 leading-tight">What's your name?</h2>
-      <p className="text-muted-foreground text-base mb-8">This is how other moms will see you.</p>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Your first name…"
-        className="w-full h-14 rounded-2xl bg-card border border-border px-5 text-base font-semibold outline-none focus:border-primary transition-colors"
-        autoFocus
-      />
-      <div className="mt-auto pb-4">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-6">👋</div>
+        <h2 className="font-display font-black text-3xl mb-2 leading-tight">What's your name?</h2>
+        <p className="text-muted-foreground text-base mb-8">This is how other moms will see you.</p>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Your first name…"
+          className="w-full h-14 rounded-2xl bg-card border border-border px-5 text-base font-semibold outline-none focus:border-primary transition-colors"
+          autoFocus
+        />
+      </div>
+      <div className="flex-shrink-0 px-6 pb-4 pt-2">
         <button
           onClick={onNext}
           disabled={value.trim().length < 2}
@@ -120,93 +122,92 @@ function StepPhoto({ name, avatarUrl, presetId, onUpload, onPreset, onNext, onBa
   const selected = avatarUrl || presetId;
 
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-4">🤳</div>
-      <h2 className="font-display font-black text-3xl mb-1 leading-tight">Add your photo</h2>
-      <p className="text-muted-foreground text-sm mb-5">
-        Help other moms recognise you. <span className="font-semibold text-foreground">No kids in photos</span> — your safety matters.
-      </p>
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-4">🤳</div>
+        <h2 className="font-display font-black text-3xl mb-1 leading-tight">Add your photo</h2>
+        <p className="text-muted-foreground text-sm mb-5">
+          Help other moms recognise you. <span className="font-semibold text-foreground">No kids in photos</span> — your safety matters.
+        </p>
 
-      {/* Preview */}
-      <div className="flex justify-center mb-5">
-        <div className="relative w-24 h-24">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Your photo" className="w-24 h-24 rounded-full object-cover border-4 border-primary/30 shadow-lg" />
-          ) : presetId ? (
-            <div
-              className="w-24 h-24 rounded-full border-4 border-primary/30 shadow-lg flex items-center justify-center text-4xl"
-              style={{ background: PRESET_AVATARS.find(a => a.id === presetId)?.bg }}
-            >
-              {PRESET_AVATARS.find(a => a.id === presetId)?.emoji}
-            </div>
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-muted border-4 border-border flex items-center justify-center">
-              <Smile className="h-10 w-10 text-muted-foreground/40" />
-            </div>
-          )}
+        {/* Preview */}
+        <div className="flex justify-center mb-5">
+          <div className="relative w-24 h-24">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Your photo" className="w-24 h-24 rounded-full object-cover border-4 border-primary/30 shadow-lg" />
+            ) : presetId ? (
+              <div
+                className="w-24 h-24 rounded-full border-4 border-primary/30 shadow-lg flex items-center justify-center text-4xl"
+                style={{ background: PRESET_AVATARS.find(a => a.id === presetId)?.bg }}
+              >
+                {PRESET_AVATARS.find(a => a.id === presetId)?.emoji}
+              </div>
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-muted border-4 border-border flex items-center justify-center">
+                <Smile className="h-10 w-10 text-muted-foreground/40" />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-muted p-1 rounded-2xl mb-4">
-        <button
-          onClick={() => setTab("upload")}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
-        >
-          <Camera className="h-3.5 w-3.5" /> My Photo
-        </button>
-        <button
-          onClick={() => setTab("avatar")}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "avatar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
-        >
-          <Smile className="h-3.5 w-3.5" /> Choose Avatar
-        </button>
-      </div>
-
-      {tab === "upload" && (
-        <div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleFile}
-          />
+        {/* Tabs */}
+        <div className="flex gap-1 bg-muted p-1 rounded-2xl mb-4">
           <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="w-full py-3.5 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-bold text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            onClick={() => setTab("upload")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
           >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-            {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Choose from camera roll"}
+            <Camera className="h-3.5 w-3.5" /> My Photo
           </button>
-          {avatarUrl && (
-            <p className="text-center text-xs text-primary font-semibold mt-2">✓ Photo uploaded</p>
-          )}
+          <button
+            onClick={() => setTab("avatar")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${tab === "avatar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+          >
+            <Smile className="h-3.5 w-3.5" /> Choose Avatar
+          </button>
         </div>
-      )}
 
-      {tab === "avatar" && (
-        <div className="grid grid-cols-4 gap-3">
-          {PRESET_AVATARS.map((a) => (
+        {tab === "upload" && (
+          <div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleFile}
+            />
             <button
-              key={a.id}
-              onClick={() => onPreset(a.id, a.emoji)}
-              className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-[0.92] border-2 ${
-                presetId === a.id && !avatarUrl ? "border-primary scale-105 shadow-md" : "border-transparent"
-              }`}
-              style={{ background: a.bg }}
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="w-full py-3.5 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-bold text-muted-foreground hover:border-primary hover:text-primary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              {a.emoji}
-              {presetId === a.id && !avatarUrl && (
-                <span className="absolute text-[10px]" />
-              )}
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              {uploading ? "Uploading…" : avatarUrl ? "Change photo" : "Choose from camera roll"}
             </button>
-          ))}
-        </div>
-      )}
+            {avatarUrl && (
+              <p className="text-center text-xs text-primary font-semibold mt-2">✓ Photo uploaded</p>
+            )}
+          </div>
+        )}
 
-      <div className="mt-auto flex gap-3 py-4">
+        {tab === "avatar" && (
+          <div className="grid grid-cols-4 gap-3">
+            {PRESET_AVATARS.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onPreset(a.id, a.emoji)}
+                className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-[0.92] border-2 ${
+                  presetId === a.id && !avatarUrl ? "border-primary scale-105 shadow-md" : "border-transparent"
+                }`}
+                style={{ background: a.bg }}
+              >
+                {a.emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-shrink-0 px-6 pb-4 pt-2 flex gap-3">
         <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
         <button
           onClick={onNext}
@@ -222,25 +223,27 @@ function StepPhoto({ name, avatarUrl, presetId, onUpload, onPreset, onNext, onBa
 // ── STEP 3: Neighborhood ─────────────────────────────────
 function StepNeighborhood({ value, onChange, onNext, onBack }: { value: string; onChange: (v: string) => void; onNext: () => void; onBack: () => void }) {
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">📍</div>
-      <h2 className="font-display font-black text-3xl mb-2 leading-tight">Your neighborhood?</h2>
-      <p className="text-muted-foreground text-base mb-6">We'll show you moms nearby.</p>
-      <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-        {NEIGHBORHOODS.map((n) => (
-          <button
-            key={n}
-            onClick={() => onChange(n)}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border font-semibold text-sm transition-all active:scale-[0.98] ${
-              value === n ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
-            }`}
-          >
-            {n}
-            {value === n && <CheckCircle2 className="h-4 w-4 text-primary" />}
-          </button>
-        ))}
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-6">📍</div>
+        <h2 className="font-display font-black text-3xl mb-2 leading-tight">Your neighborhood?</h2>
+        <p className="text-muted-foreground text-base mb-6">We'll show you moms nearby.</p>
+        <div className="space-y-2">
+          {NEIGHBORHOODS.map((n) => (
+            <button
+              key={n}
+              onClick={() => onChange(n)}
+              className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border font-semibold text-sm transition-all active:scale-[0.98] ${
+                value === n ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+              }`}
+            >
+              {n}
+              {value === n && <CheckCircle2 className="h-4 w-4 text-primary" />}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex gap-3 py-4">
+      <div className="flex-shrink-0 px-6 pb-4 pt-2 flex gap-3">
         <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
         <button onClick={onNext} disabled={!value} className="flex-1 py-4 rounded-2xl gradient-primary text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98] transition-all">Continue</button>
       </div>
@@ -275,38 +278,40 @@ function StepLocation({ onGrant, onSkip, onBack }: LocationStepProps) {
   };
 
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">🗺️</div>
-      <h2 className="font-display font-black text-3xl mb-2 leading-tight">Find parks near you</h2>
-      <p className="text-muted-foreground text-base mb-8">
-        Allow location so the map opens right where you are — no searching required.
-      </p>
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-6">🗺️</div>
+        <h2 className="font-display font-black text-3xl mb-2 leading-tight">Find parks near you</h2>
+        <p className="text-muted-foreground text-base mb-8">
+          Allow location so the map opens right where you are — no searching required.
+        </p>
 
-      {status === "idle" && (
-        <button
-          onClick={requestLocation}
-          disabled={requesting}
-          className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-3"
-        >
-          {requesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Navigation className="h-5 w-5" />}
-          {requesting ? "Requesting…" : "Allow Location"}
-        </button>
-      )}
+        {status === "idle" && (
+          <button
+            onClick={requestLocation}
+            disabled={requesting}
+            className="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-3"
+          >
+            {requesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Navigation className="h-5 w-5" />}
+            {requesting ? "Requesting…" : "Allow Location"}
+          </button>
+        )}
 
-      {status === "granted" && (
-        <div className="w-full py-4 rounded-2xl bg-primary/10 border border-primary text-primary font-bold text-base flex items-center justify-center gap-2 mb-3">
-          <MapPin className="h-5 w-5" />
-          Location saved ✓
-        </div>
-      )}
+        {status === "granted" && (
+          <div className="w-full py-4 rounded-2xl bg-primary/10 border border-primary text-primary font-bold text-base flex items-center justify-center gap-2 mb-3">
+            <MapPin className="h-5 w-5" />
+            Location saved ✓
+          </div>
+        )}
 
-      {status === "denied" && (
-        <div className="bg-muted rounded-2xl px-4 py-3 mb-3 text-sm text-muted-foreground">
-          No problem — you can allow this later in your device Settings. The map will still show parks in your area.
-        </div>
-      )}
+        {status === "denied" && (
+          <div className="bg-muted rounded-2xl px-4 py-3 mb-3 text-sm text-muted-foreground">
+            No problem — you can allow this later in your device Settings. The map will still show parks in your area.
+          </div>
+        )}
+      </div>
 
-      <div className="mt-auto flex gap-3 py-4">
+      <div className="flex-shrink-0 px-6 pb-4 pt-2 flex gap-3">
         <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
         <button
           onClick={onSkip}
@@ -324,24 +329,26 @@ function StepKids({ value, onChange, onNext, onBack }: { value: string[]; onChan
   const toggle = (age: string) =>
     onChange(value.includes(age) ? value.filter((a) => a !== age) : [...value, age]);
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">🧒</div>
-      <h2 className="font-display font-black text-3xl mb-2 leading-tight">Kids' ages?</h2>
-      <p className="text-muted-foreground text-base mb-6">Select all that apply — we'll match you with moms who have similar-aged kids.</p>
-      <div className="flex flex-wrap gap-3 mb-4">
-        {KIDS_AGES.map((age) => (
-          <button
-            key={age}
-            onClick={() => toggle(age)}
-            className={`px-5 py-3 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
-              value.includes(age) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
-            }`}
-          >
-            {age}
-          </button>
-        ))}
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-6">🧒</div>
+        <h2 className="font-display font-black text-3xl mb-2 leading-tight">Kids' ages?</h2>
+        <p className="text-muted-foreground text-base mb-6">Select all that apply — we'll match you with moms who have similar-aged kids.</p>
+        <div className="flex flex-wrap gap-3">
+          {KIDS_AGES.map((age) => (
+            <button
+              key={age}
+              onClick={() => toggle(age)}
+              className={`px-5 py-3 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
+                value.includes(age) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+              }`}
+            >
+              {age}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="mt-auto flex gap-3 py-4">
+      <div className="flex-shrink-0 px-6 pb-4 pt-2 flex gap-3">
         <button onClick={onBack} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
         <button onClick={onNext} disabled={value.length === 0} className="flex-1 py-4 rounded-2xl gradient-primary text-white font-bold text-sm disabled:opacity-40 active:scale-[0.98] transition-all">Continue</button>
       </div>
@@ -354,26 +361,28 @@ function StepInterests({ value, onChange, onFinish, onBack, saving }: { value: s
   const toggle = (label: string) =>
     onChange(value.includes(label) ? value.filter((i) => i !== label) : [...value, label]);
   return (
-    <div className="flex flex-col flex-1 px-6 pt-4">
-      <div className="text-5xl mb-6">✨</div>
-      <h2 className="font-display font-black text-3xl mb-2 leading-tight">What are you into?</h2>
-      <p className="text-muted-foreground text-base mb-6">Pick at least 3 interests to find your best matches.</p>
-      <div className="flex flex-wrap gap-2 mb-4 flex-1 overflow-y-auto content-start">
-        {INTERESTS.map(({ emoji, label }) => (
-          <button
-            key={label}
-            onClick={() => toggle(label)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
-              value.includes(label) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
-            }`}
-          >
-            <span>{emoji}</span>
-            <span>{label}</span>
-            {value.includes(label) && <CheckCircle2 className="h-3.5 w-3.5 ml-0.5" />}
-          </button>
-        ))}
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-4 pb-4">
+        <div className="text-5xl mb-6">✨</div>
+        <h2 className="font-display font-black text-3xl mb-2 leading-tight">What are you into?</h2>
+        <p className="text-muted-foreground text-base mb-6">Pick at least 3 interests to find your best matches.</p>
+        <div className="flex flex-wrap gap-2">
+          {INTERESTS.map(({ emoji, label }) => (
+            <button
+              key={label}
+              onClick={() => toggle(label)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-sm font-bold transition-all active:scale-[0.96] ${
+                value.includes(label) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+              }`}
+            >
+              <span>{emoji}</span>
+              <span>{label}</span>
+              {value.includes(label) && <CheckCircle2 className="h-3.5 w-3.5 ml-0.5" />}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="mt-auto flex gap-3 py-4">
+      <div className="flex-shrink-0 px-6 pb-4 pt-2 flex gap-3">
         <button onClick={onBack} disabled={saving} className="flex-1 py-4 rounded-2xl border border-border bg-card font-bold text-sm active:bg-muted transition-all">Back</button>
         <button
           onClick={onFinish}
@@ -394,6 +403,7 @@ export default function Onboarding() {
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
 
   // Lifted state
   const [name, setName] = useState("");
@@ -459,7 +469,10 @@ export default function Onboarding() {
         .eq("id", user.id);
 
       if (error) throw error;
-      navigate("/dashboard");
+      setSaving(false);
+      setShowComplete(true);
+      setTimeout(() => navigate("/dashboard"), 1800);
+      return;
     } catch (err: any) {
       toast({ title: "Couldn't save profile", description: err.message, variant: "destructive" });
     } finally {
@@ -532,6 +545,19 @@ export default function Onboarding() {
           {step === 5 && <StepInterests value={interests} onChange={setInterests} onFinish={finish} onBack={back} saving={saving} />}
         </div>
       </div>
+
+      {/* Profile completed overlay */}
+      {showComplete && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 animate-fade-in">
+          <div className="animate-scale-in">
+            <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center mb-5">
+              <CheckCircle2 className="h-12 w-12 text-primary" />
+            </div>
+          </div>
+          <h2 className="font-display font-black text-2xl animate-fade-in mb-1">Profile Complete!</h2>
+          <p className="text-sm text-muted-foreground animate-fade-in">Welcome to your Village 🌸</p>
+        </div>
+      )}
     </div>
   );
 }
