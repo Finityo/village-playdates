@@ -24,7 +24,7 @@ export function useProfile() {
     Promise.all([
       supabase
         .from("profiles")
-        .select("id, created_at, updated_at, verified, bio, avatar_url, verification_status, display_name, neighborhood, kids_ages, interests")
+        .select("id, created_at, updated_at, verified, bio, avatar_url, verification_status, display_name, neighborhood, kids_ages, interests, availability")
         .eq("id", user.id)
         .maybeSingle(),
       supabase.rpc("get_my_location"),
@@ -43,7 +43,7 @@ export function useProfile() {
       .from("profiles")
       .update(updates)
       .eq("id", user.id)
-      .select("id, created_at, updated_at, verified, bio, avatar_url, verification_status, display_name, neighborhood, kids_ages, interests")
+      .select("id, created_at, updated_at, verified, bio, avatar_url, verification_status, display_name, neighborhood, kids_ages, interests, availability")
       .single();
     if (!error && data) {
       // Re-fetch own location separately (GPS columns are col-level restricted)
