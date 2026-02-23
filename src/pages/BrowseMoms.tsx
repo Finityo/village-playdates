@@ -458,13 +458,17 @@ export default function BrowseMoms() {
 
 // ── REAL PROFILE CARD ─────────────────────────────────────
 function RealProfileCard({ profile, myInterests }: { profile: RealProfile; myInterests: string[] }) {
+  const navigate = useNavigate();
   const initials = profile.display_name ? getInitials(profile.display_name) : "?";
   const color = getAvatarColor(profile.id);
   const interests = profile.interests ?? [];
   const sharedCount = interests.filter((i) => myInterests.includes(i)).length;
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-card shadow-card overflow-hidden">
+    <div
+      onClick={() => navigate(`/mom/${profile.id}`)}
+      className="rounded-2xl border border-primary/30 bg-card shadow-card overflow-hidden cursor-pointer hover:shadow-hover hover:-translate-y-0.5 transition-all duration-300"
+    >
       <div className="h-1.5 gradient-primary" />
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
@@ -520,6 +524,15 @@ function RealProfileCard({ profile, myInterests }: { profile: RealProfile; myInt
             ))}
           </div>
         )}
+
+        <div className="mt-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/mom/${profile.id}`); }}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition"
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> View Profile
+          </button>
+        </div>
       </div>
     </div>
   );
