@@ -518,8 +518,8 @@ export default function Onboarding() {
       </div>
 
       {/* Step content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div key={step} className="flex-1 flex flex-col animate-in slide-in-from-right-4 duration-250">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div key={step} className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-250">
           {step === 0 && <StepName value={name} onChange={setName} onNext={next} />}
           {step === 1 && (
             <StepPhoto
