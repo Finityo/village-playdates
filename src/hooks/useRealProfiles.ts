@@ -14,7 +14,7 @@ export interface RealProfile {
 }
 
 /**
- * Fetches all public profiles from the database (excluding current user)
+ * Fetches all public profiles from the database (excluding current user and blocked users)
  * so Browse can show real user data instead of mock data.
  */
 export function useRealProfiles() {
@@ -23,20 +23,40 @@ export function useRealProfiles() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let query = supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, neighborhood, kids_ages, interests, bio, verified")
-      .not("display_name", "is", null)
-      .order("created_at", { ascending: false });
+    async function fetchProfiles() {
+      // Get blocked user IDs first
+      let blockedIds: string[] = [];
+      if (user) {
+        const { data: blocks } = await supabase
+          .from("blocked_users")
+          .select("blocked_id")
+          .eq("blocker_id", user.id);
+        blockedIds = (blocks ?? []).map((b) => b.blocked_id);
+      }
 
-    if (user) {
-      query = query.neq("id", user.id);
+      let query = supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, neighborhood, kids_ages, interests, bio, verified")
+        .not("display_name", "is", null)
+        .order("created_at", { ascending: false });
+
+      if (user) {
+        query = query.neq("id", user.id);
+      }
+
+      const { data } = await query;
+      const allProfiles = (data as RealProfile[]) ?? [];
+      
+      // Filter out blocked users
+      const filtered = blockedIds.length > 0
+        ? allProfiles.filter((p) => !blockedIds.includes(p.id))
+        : allProfiles;
+
+      setProfiles(filtered);
+      setLoading(false);
     }
 
-    query.then(({ data }) => {
-      setProfiles((data as RealProfile[]) ?? []);
-      setLoading(false);
-    });
+    fetchProfiles();
   }, [user]);
 
   return { profiles, loading };

@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ReportBlockMenu } from "@/components/ReportBlockMenu";
+import { useReportBlock } from "@/hooks/useReportBlock";
 import profileBanner from "@/assets/profile-banner.jpg";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -61,6 +63,8 @@ export default function MomProfile() {
 
   // Determine if this is a mock ID (number) or real UUID
   const isRealProfile = id && id.includes("-");
+  const targetProfileId = isRealProfile ? id : "";
+  const { isBlocked, loading: rbLoading, blockUser, unblockUser, reportUser } = useReportBlock(targetProfileId || undefined);
 
   // Real profile state
   const [realProfile, setRealProfile] = useState<RealProfileData | null>(null);
@@ -189,12 +193,24 @@ export default function MomProfile() {
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
-        <button
-          onClick={() => setLiked(!liked)}
-          className={`absolute top-16 right-4 p-2.5 rounded-full shadow-soft backdrop-blur transition ${liked ? "bg-red-50 text-red-500" : "bg-white/80 text-muted-foreground hover:bg-white"}`}
-        >
-          <Heart className="h-5 w-5" fill={liked ? "currentColor" : "none"} />
-        </button>
+        <div className="absolute top-16 right-4 flex items-center gap-2">
+          {isRealProfile && user && targetProfileId !== user.id && (
+            <ReportBlockMenu
+              isBlocked={isBlocked}
+              loading={rbLoading}
+              onBlock={blockUser}
+              onUnblock={unblockUser}
+              onReport={reportUser}
+              userName={name}
+            />
+          )}
+          <button
+            onClick={() => setLiked(!liked)}
+            className={`p-2.5 rounded-full shadow-soft backdrop-blur transition ${liked ? "bg-red-50 text-red-500" : "bg-white/80 text-muted-foreground hover:bg-white"}`}
+          >
+            <Heart className="h-5 w-5" fill={liked ? "currentColor" : "none"} />
+          </button>
+        </div>
       </div>
 
       {/* ── PROFILE HEADER ─────────────────────────────── */}
