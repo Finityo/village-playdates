@@ -65,6 +65,7 @@ function Layout() {
           <Route path="/terms" element={<Terms />} />
 
           {/* Protected */}
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/browse" element={<ProtectedRoute><BrowseMoms /></ProtectedRoute>} />
           <Route path="/mom/:id" element={<ProtectedRoute><MomProfile /></ProtectedRoute>} />
