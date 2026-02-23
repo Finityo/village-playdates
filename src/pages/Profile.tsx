@@ -187,7 +187,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await updateProfile({
+    const result = await updateProfile({
       display_name: name.trim() || null,
       neighborhood: neighborhood || null,
       bio: bio.trim() || null,
@@ -195,8 +195,8 @@ function EditSheet({ onClose }: { onClose: () => void }) {
       interests: selectedInterests,
     });
     setSaving(false);
-    if (error) {
-      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    if (result?.error) {
+      toast({ title: "Couldn't save", description: result.error.message, variant: "destructive" });
     } else {
       toast({ title: "Profile saved! ✓" });
       onClose();

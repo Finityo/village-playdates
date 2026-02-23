@@ -37,8 +37,8 @@ export function useProfile() {
     });
   }, [user]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return;
+  const updateProfile = async (updates: Partial<Profile>): Promise<{ error: any }> => {
+    if (!user) return { error: { message: "Not authenticated" } };
     const { data, error } = await supabase
       .from("profiles")
       .update(updates)
@@ -51,7 +51,7 @@ export function useProfile() {
       const location = locationData?.[0] ?? { lat: null, lng: null };
       setProfile({ ...data, lat: location.lat, lng: location.lng } as Profile);
     }
-    return { error };
+    return { error: error ?? null };
   };
 
   return { profile, loading, updateProfile, setProfile };
