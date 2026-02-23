@@ -44,6 +44,11 @@ const ALL_INTERESTS = [
 
 const KIDS_AGES = ["0–1 yr", "1–2 yrs", "2–3 yrs", "3–5 yrs", "5–7 yrs", "7–10 yrs"];
 
+const AVAILABILITY_OPTIONS = [
+  "Weekday Mornings", "Weekday Afternoons", "Weekday Evenings",
+  "Weekend Mornings", "Weekend Afternoons", "Weekend Evenings",
+];
+
 function getInitials(name: string): string {
   const parts = name.trim().split(" ");
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -77,6 +82,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
   const [bio, setBio] = useState("");
   const [selectedKids, setSelectedKids] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedAvailability, setSelectedAvailability] = useState<string[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -86,6 +92,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
     setBio(profile.bio ?? "");
     setSelectedKids(profile.kids_ages ?? []);
     setSelectedInterests(profile.interests ?? []);
+    setSelectedAvailability((profile as any).availability ?? []);
     setInitialized(true);
   }, [profile, initialized]);
 
@@ -93,6 +100,8 @@ function EditSheet({ onClose }: { onClose: () => void }) {
     setSelectedKids((prev) => prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]);
   const toggleInterest = (label: string) =>
     setSelectedInterests((prev) => prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]);
+  const toggleAvailability = (slot: string) =>
+    setSelectedAvailability((prev) => prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -102,6 +111,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
       bio: bio.trim() || null,
       kids_ages: selectedKids,
       interests: selectedInterests,
+      availability: selectedAvailability,
     });
     setSaving(false);
     if (result?.error) {
@@ -244,6 +254,24 @@ function EditSheet({ onClose }: { onClose: () => void }) {
                 >
                   <span>{emoji}</span>
                   <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Availability</label>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABILITY_OPTIONS.map((slot) => (
+                <button
+                  key={slot}
+                  onClick={() => toggleAvailability(slot)}
+                  className={`px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all active:scale-[0.96] ${
+                    selectedAvailability.includes(slot) ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"
+                  }`}
+                >
+                  🕐 {slot}
                 </button>
               ))}
             </div>

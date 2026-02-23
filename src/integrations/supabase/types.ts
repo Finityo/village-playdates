@@ -167,6 +167,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability: string[] | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -182,6 +183,7 @@ export type Database = {
           verified: boolean
         }
         Insert: {
+          availability?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -197,6 +199,7 @@ export type Database = {
           verified?: boolean
         }
         Update: {
+          availability?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
