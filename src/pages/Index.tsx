@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Shield, Users, Star, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import heroLanding from "@/assets/hero-landing.jpg";
 
 const howItWorks = [
@@ -21,6 +22,13 @@ const testimonials = [
 ];
 
 export default function Index() {
+  const { session, loading } = useAuth();
+
+  // Redirect authenticated users to dashboard
+  if (!loading && session) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
 
