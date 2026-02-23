@@ -8,6 +8,18 @@
  */
 import { cn } from "@/lib/utils";
 
+import avatarCat from "@/assets/avatars/avatar-cat.png";
+import avatarFox from "@/assets/avatars/avatar-fox.png";
+import avatarBunny from "@/assets/avatars/avatar-bunny.png";
+import avatarOwl from "@/assets/avatars/avatar-owl.png";
+import avatarBear from "@/assets/avatars/avatar-bear.png";
+import avatarPanda from "@/assets/avatars/avatar-panda.png";
+
+const PRESET_AVATAR_MAP: Record<string, string> = {
+  cat: avatarCat, fox: avatarFox, bunny: avatarBunny,
+  owl: avatarOwl, bear: avatarBear, panda: avatarPanda,
+};
+
 interface UserAvatarProps {
   avatarUrl: string | null | undefined;
   displayName: string | null | undefined;
@@ -56,6 +68,19 @@ export function UserAvatar({ avatarUrl, displayName, userId, size = "md", classN
   const emojiSizeClass = EMOJI_SIZE_MAP[size];
 
   const baseClass = cn("rounded-full flex-shrink-0 flex items-center justify-center font-bold overflow-hidden", sizeClass, className);
+
+  // Preset animal avatar
+  if (avatarUrl?.startsWith("preset-avatar:")) {
+    const id = avatarUrl.replace("preset-avatar:", "");
+    const src = PRESET_AVATAR_MAP[id];
+    if (src) {
+      return (
+        <div className={cn(baseClass, "bg-card")}>
+          <img src={src} alt={id} className="w-full h-full object-cover" />
+        </div>
+      );
+    }
+  }
 
   // Real uploaded photo
   if (avatarUrl && !avatarUrl.startsWith("preset:")) {
