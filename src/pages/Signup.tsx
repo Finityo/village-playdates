@@ -127,9 +127,10 @@ export default function Signup() {
         <button
           type="button"
           onClick={async () => {
-            const { error } = await lovable.auth.signInWithOAuth("google", {
-              redirect_uri: window.location.origin,
+            const { error, redirected } = await lovable.auth.signInWithOAuth("google", {
+              redirect_uri: `${window.location.origin}/dashboard`,
             });
+            if (!redirected && !error) window.location.href = "/dashboard";
             if (error) toast({ title: "Google sign-up failed", description: String(error), variant: "destructive" });
           }}
           className="w-full py-4 rounded-2xl border border-border bg-card font-bold text-base flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
@@ -141,9 +142,10 @@ export default function Signup() {
         <button
           type="button"
           onClick={async () => {
-            const { error } = await lovable.auth.signInWithOAuth("apple", {
-              redirect_uri: window.location.origin,
+            const { error, redirected } = await lovable.auth.signInWithOAuth("apple", {
+              redirect_uri: `${window.location.origin}/dashboard`,
             });
+            if (!redirected && !error) window.location.href = "/dashboard";
             if (error) toast({ title: "Apple sign-up failed", description: String(error), variant: "destructive" });
           }}
           className="w-full mt-3 py-4 rounded-2xl border border-border bg-card font-bold text-base flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
