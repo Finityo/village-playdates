@@ -23,7 +23,7 @@ export default function Privacy() {
         <div className="mb-8">
           <div className="text-3xl mb-3">🔒</div>
           <h1 className="font-display font-black text-2xl mb-2">Your Privacy Matters</h1>
-          <p className="text-sm text-muted-foreground">Last updated: February 19, 2025</p>
+          <p className="text-sm text-muted-foreground">Last updated: February 19, 2026</p>
         </div>
 
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-8">
