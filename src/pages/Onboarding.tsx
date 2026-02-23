@@ -3,6 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Loader2, MapPin, Navigation, Smile } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+import avatarCat from "@/assets/avatars/avatar-cat.png";
+import avatarFox from "@/assets/avatars/avatar-fox.png";
+import avatarBunny from "@/assets/avatars/avatar-bunny.png";
+import avatarOwl from "@/assets/avatars/avatar-owl.png";
+import avatarBear from "@/assets/avatars/avatar-bear.png";
+import avatarPanda from "@/assets/avatars/avatar-panda.png";
 import { useToast } from "@/hooks/use-toast";
 
 const NEIGHBORHOODS = [
@@ -32,16 +39,14 @@ const INTERESTS = [
   { emoji: "🌸", label: "Mindfulness" },
 ];
 
-// Illustrated avatars — colourful emoji-style options
+// Same 6 animal avatars used across the whole app
 const PRESET_AVATARS = [
-  { id: "flower", emoji: "🌸", bg: "hsl(330,70%,92%)" },
-  { id: "sun",    emoji: "☀️", bg: "hsl(45,90%,88%)"  },
-  { id: "leaf",   emoji: "🌿", bg: "hsl(142,50%,88%)" },
-  { id: "wave",   emoji: "🌊", bg: "hsl(204,70%,88%)" },
-  { id: "star",   emoji: "⭐", bg: "hsl(50,90%,85%)"  },
-  { id: "heart",  emoji: "💚", bg: "hsl(142,45%,85%)" },
-  { id: "moon",   emoji: "🌙", bg: "hsl(270,50%,90%)" },
-  { id: "cherry", emoji: "🍒", bg: "hsl(0,65%,90%)"   },
+  { id: "cat", src: avatarCat, label: "Cat" },
+  { id: "fox", src: avatarFox, label: "Fox" },
+  { id: "bunny", src: avatarBunny, label: "Bunny" },
+  { id: "owl", src: avatarOwl, label: "Owl" },
+  { id: "bear", src: avatarBear, label: "Bear" },
+  { id: "panda", src: avatarPanda, label: "Panda" },
 ];
 
 // ── STEP 1: Name ─────────────────────────────────────────
@@ -79,7 +84,7 @@ type PhotoStepProps = {
   avatarUrl: string | null;
   presetId: string | null;
   onUpload: (url: string) => void;
-  onPreset: (id: string, emoji: string) => void;
+  onPreset: (id: string) => void;
   onNext: () => void;
   onBack: () => void;
   userId: string;
@@ -136,12 +141,11 @@ function StepPhoto({ name, avatarUrl, presetId, onUpload, onPreset, onNext, onBa
             {avatarUrl ? (
               <img src={avatarUrl} alt="Your photo" className="w-24 h-24 rounded-full object-cover border-4 border-primary/30 shadow-lg" />
             ) : presetId ? (
-              <div
-                className="w-24 h-24 rounded-full border-4 border-primary/30 shadow-lg flex items-center justify-center text-4xl"
-                style={{ background: PRESET_AVATARS.find(a => a.id === presetId)?.bg }}
-              >
-                {PRESET_AVATARS.find(a => a.id === presetId)?.emoji}
-              </div>
+              <img
+                src={PRESET_AVATARS.find(a => a.id === presetId)?.src}
+                alt="Avatar"
+                className="w-24 h-24 rounded-full object-cover border-4 border-primary/30 shadow-lg bg-card"
+              />
             ) : (
               <div className="w-24 h-24 rounded-full bg-muted border-4 border-border flex items-center justify-center">
                 <Smile className="h-10 w-10 text-muted-foreground/40" />
@@ -190,17 +194,17 @@ function StepPhoto({ name, avatarUrl, presetId, onUpload, onPreset, onNext, onBa
         )}
 
         {tab === "avatar" && (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {PRESET_AVATARS.map((a) => (
               <button
                 key={a.id}
-                onClick={() => onPreset(a.id, a.emoji)}
-                className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all active:scale-[0.92] border-2 ${
-                  presetId === a.id && !avatarUrl ? "border-primary scale-105 shadow-md" : "border-transparent"
+                onClick={() => onPreset(a.id)}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all active:scale-[0.92] border-2 ${
+                  presetId === a.id && !avatarUrl ? "border-primary scale-105 shadow-md bg-primary/5" : "border-transparent bg-card"
                 }`}
-                style={{ background: a.bg }}
               >
-                {a.emoji}
+                <img src={a.src} alt={a.label} className="w-14 h-14 rounded-full object-cover" />
+                <span className="text-xs font-bold text-muted-foreground">{a.label}</span>
               </button>
             ))}
           </div>
@@ -427,10 +431,10 @@ export default function Onboarding() {
     else setStep((s) => s - 1);
   };
 
-  const handlePreset = (id: string, emoji: string) => {
+  const handlePreset = (id: string) => {
     setPresetId(id);
-    setPresetEmoji(emoji);
-    setAvatarUrl(null); // clear any uploaded photo if switching to avatar
+    setPresetEmoji(null);
+    setAvatarUrl(null);
   };
 
   const handleUpload = (url: string) => {
@@ -450,12 +454,11 @@ export default function Onboarding() {
         interests,
       };
 
-      // Real uploaded photo takes priority; fallback to preset emoji stored as avatar_url sentinel
+      // Real uploaded photo takes priority; fallback to preset-avatar: prefix (matches AvatarPicker & Profile)
       if (avatarUrl) {
         updates.avatar_url = avatarUrl;
-      } else if (presetEmoji) {
-        // Store the preset as a data URI so the rest of the app renders it consistently
-        updates.avatar_url = `preset:${presetEmoji}`;
+      } else if (presetId) {
+        updates.avatar_url = `preset-avatar:${presetId}`;
       }
 
       if (lat !== null && lng !== null) {
