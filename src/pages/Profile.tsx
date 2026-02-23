@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut, Loader2 } from "lucide-react";
 import { INTEREST_ICONS } from "@/data/moms";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,10 +115,50 @@ function EditSheet({ onClose }: { onClose: () => void }) {
     }
   };
 
+  // Swipe-down gesture state
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only enable swipe on the handle/header area or when scrolled to top
+    const target = e.target as HTMLElement;
+    const scrollContainer = sheetRef.current?.querySelector("[data-scroll]") as HTMLElement | null;
+    const isScrolledToTop = !scrollContainer || scrollContainer.scrollTop <= 0;
+    const isHandle = target.closest("[data-drag-handle]");
+    if (!isHandle && !isScrolledToTop) return;
+    dragStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const dy = Math.max(0, e.touches[0].clientY - dragStartY.current);
+    setDragY(dy);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    if (dragY > 120) {
+      onClose();
+    }
+    setDragY(0);
+    setIsDragging(false);
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/50" onClick={onClose}>
-      <div className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col relative" onClick={(e) => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full bg-border mx-auto mt-3 mb-2 flex-shrink-0" />
+      <div
+        ref={sheetRef}
+        className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col relative transition-transform"
+        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined, transition: isDragging ? "none" : "transform 0.3s ease-out" }}
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div data-drag-handle className="w-10 h-1.5 rounded-full bg-border mx-auto mt-3 mb-2 flex-shrink-0 cursor-grab active:cursor-grabbing" />
         <div className="flex items-center justify-between px-5 pb-4 border-b border-border flex-shrink-0">
           <div>
             <h2 className="font-display font-black text-lg">Edit Profile</h2>
@@ -129,7 +169,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+        <div data-scroll className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
           {/* Name */}
           <div>
             <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Display name</label>
