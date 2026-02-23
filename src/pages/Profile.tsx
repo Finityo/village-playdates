@@ -204,7 +204,7 @@ function EditSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/50" onClick={onClose}>
       <div className="bg-background rounded-t-3xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 rounded-full bg-border mx-auto mt-3 mb-2 flex-shrink-0" />
         <div className="flex items-center justify-between px-5 pb-4 border-b border-border flex-shrink-0">
