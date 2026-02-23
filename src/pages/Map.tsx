@@ -5,6 +5,18 @@ import "leaflet/dist/leaflet.css";
 import { Star, Users, Navigation, X } from "lucide-react";
 import { useRealProfiles } from "@/hooks/useRealProfiles";
 
+import avatarCat from "@/assets/avatars/avatar-cat.png";
+import avatarFox from "@/assets/avatars/avatar-fox.png";
+import avatarBunny from "@/assets/avatars/avatar-bunny.png";
+import avatarOwl from "@/assets/avatars/avatar-owl.png";
+import avatarBear from "@/assets/avatars/avatar-bear.png";
+import avatarPanda from "@/assets/avatars/avatar-panda.png";
+
+const PRESET_AVATAR_MAP_FOR_MAP: Record<string, string> = {
+  cat: avatarCat, fox: avatarFox, bunny: avatarBunny,
+  owl: avatarOwl, bear: avatarBear, panda: avatarPanda,
+};
+
 // ── FIX LEAFLET DEFAULT ICON PATHS (broken by bundlers) ─────────────────────
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
@@ -163,19 +175,37 @@ function getBg(id: string) { return PASTEL_COLORS[id.charCodeAt(0) % PASTEL_COLO
 function makeAvatarIcon(avatarUrl: string | null, displayName: string | null, userId: string) {
   const bg = getBg(userId);
   let inner: string;
-  if (avatarUrl && avatarUrl.startsWith("preset:")) {
-    const emoji = avatarUrl.replace("preset:", "");
-    inner = `<span style="font-size:16px;line-height:1">${emoji}</span>`;
+  let bgStyle: string;
+
+  if (avatarUrl?.startsWith("preset-avatar:")) {
+    // Animal preset — resolve to imported asset at runtime isn't possible in raw HTML,
+    // so we import them at the top and use a map
+    const id = avatarUrl.replace("preset-avatar:", "");
+    const src = PRESET_AVATAR_MAP_FOR_MAP[id];
+    if (src) {
+      inner = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+      bgStyle = "hsl(0 0% 97%)";
+    } else {
+      const initials = (displayName ?? "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+      inner = `<span style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.55)">${initials}</span>`;
+      bgStyle = bg;
+    }
   } else if (avatarUrl && !avatarUrl.startsWith("preset:")) {
     inner = `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+    bgStyle = "#e5e7eb";
+  } else if (avatarUrl?.startsWith("preset:")) {
+    const emoji = avatarUrl.replace("preset:", "");
+    inner = `<span style="font-size:16px;line-height:1">${emoji}</span>`;
+    bgStyle = bg;
   } else {
     const initials = (displayName ?? "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
     inner = `<span style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.55)">${initials}</span>`;
+    bgStyle = bg;
   }
   const html = `
     <div style="
       width:36px;height:36px;border-radius:50%;
-      background:${avatarUrl && !avatarUrl.startsWith("preset:") ? "#e5e7eb" : bg};
+      background:${bgStyle};
       border:2.5px solid white;
       box-shadow:0 2px 8px rgba(0,0,0,0.18);
       display:flex;align-items:center;justify-content:center;
