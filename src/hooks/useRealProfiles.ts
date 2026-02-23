@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface RealProfile {
   id: string;
@@ -13,24 +14,30 @@ export interface RealProfile {
 }
 
 /**
- * Fetches all public profiles from the database so Browse can show real
- * user data (avatars, neighborhoods, interests) instead of mock data.
+ * Fetches all public profiles from the database (excluding current user)
+ * so Browse can show real user data instead of mock data.
  */
 export function useRealProfiles() {
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState<RealProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
+    let query = supabase
       .from("profiles")
       .select("id, display_name, avatar_url, neighborhood, kids_ages, interests, bio, verified")
       .not("display_name", "is", null)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setProfiles((data as RealProfile[]) ?? []);
-        setLoading(false);
-      });
-  }, []);
+      .order("created_at", { ascending: false });
+
+    if (user) {
+      query = query.neq("id", user.id);
+    }
+
+    query.then(({ data }) => {
+      setProfiles((data as RealProfile[]) ?? []);
+      setLoading(false);
+    });
+  }, [user]);
 
   return { profiles, loading };
 }
