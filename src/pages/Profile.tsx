@@ -343,6 +343,7 @@ export default function Profile() {
   const bio = profile?.bio;
   const kidsAges = profile?.kids_ages ?? [];
   const interests = profile?.interests ?? [];
+  const availability = (profile as any)?.availability ?? [];
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : "—";
@@ -439,6 +440,20 @@ export default function Profile() {
               <span key={interest} className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
                 <span>{INTEREST_ICONS[interest] ?? "✨"}</span>
                 <span>{interest}</span>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Availability */}
+      {availability.length > 0 && (
+        <section className="px-4 mb-5">
+          <h2 className="font-display font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">Availability</h2>
+          <div className="flex flex-wrap gap-2">
+            {availability.map((slot: string) => (
+              <span key={slot} className="px-4 py-2 rounded-2xl bg-accent/50 border border-accent text-xs font-bold text-foreground">
+                🕐 {slot}
               </span>
             ))}
           </div>
