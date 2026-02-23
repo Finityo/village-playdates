@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Edit2, MapPin, X, CheckCircle2, Camera, LogOut, Loader2 } from "lucide-react";
 import { INTEREST_ICONS } from "@/data/moms";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,6 +6,19 @@ import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import AvatarPicker from "@/components/AvatarPicker";
+
+import avatarCat from "@/assets/avatars/avatar-cat.png";
+import avatarFox from "@/assets/avatars/avatar-fox.png";
+import avatarBunny from "@/assets/avatars/avatar-bunny.png";
+import avatarOwl from "@/assets/avatars/avatar-owl.png";
+import avatarBear from "@/assets/avatars/avatar-bear.png";
+import avatarPanda from "@/assets/avatars/avatar-panda.png";
+
+const PRESET_AVATAR_MAP: Record<string, string> = {
+  cat: avatarCat, fox: avatarFox, bunny: avatarBunny,
+  owl: avatarOwl, bear: avatarBear, panda: avatarPanda,
+};
 
 const AVATAR_COLORS = [
   "hsl(142 38% 40%)", "hsl(12 82% 65%)", "hsl(204 80% 62%)",
@@ -43,118 +56,14 @@ function getAvatarColor(id: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// ── AVATAR UPLOADER ────────────────────────────────────────
-function AvatarUploader({
-  userId,
-  avatarUrl,
-  displayName,
-  avatarColor,
-  onUploaded,
-}: {
-  userId: string;
-  avatarUrl: string | null;
-  displayName: string;
-  avatarColor: string;
-  onUploaded: (url: string) => void;
-}) {
-  const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate type and size (5 MB max)
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast({ title: "Unsupported format", description: "Please use JPG, PNG, or WebP.", variant: "destructive" });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5 MB.", variant: "destructive" });
-      return;
-    }
-
-    setUploading(true);
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${userId}/avatar.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(path, file, { upsert: true, contentType: file.type });
-
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
-      setUploading(false);
-      return;
-    }
-
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    // Add cache-bust so the browser fetches the new image
-    const url = `${data.publicUrl}?t=${Date.now()}`;
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: url })
-      .eq("id", userId);
-
-    if (profileError) {
-      toast({ title: "Couldn't save avatar", description: profileError.message, variant: "destructive" });
-    } else {
-      onUploaded(url);
-      toast({ title: "Photo updated! 📸" });
-    }
-    setUploading(false);
-    // Reset input so the same file can be re-selected
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const initials = getInitials(displayName);
-
-  return (
-    <div className="relative inline-block">
-      {/* Avatar circle */}
-      <div
-        className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-soft flex-shrink-0 cursor-pointer"
-        onClick={() => !uploading && fileRef.current?.click()}
-        style={{ backgroundColor: avatarUrl && !avatarUrl.startsWith("preset:") ? undefined : avatarColor }}
-      >
-        {avatarUrl && !avatarUrl.startsWith("preset:") ? (
-          <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-        ) : avatarUrl?.startsWith("preset:") ? (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            {avatarUrl.replace("preset:", "")}
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white">
-            {initials}
-          </div>
-        )}
-      </div>
-
-      {/* Camera button overlay */}
-      <button
-        onClick={() => !uploading && fileRef.current?.click()}
-        disabled={uploading}
-        className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-soft transition-all active:scale-90"
-        aria-label="Change profile photo"
-      >
-        {uploading ? (
-          <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
-        ) : (
-          <Camera className="h-3.5 w-3.5 text-white" />
-        )}
-      </button>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={handleFile}
-      />
-    </div>
-  );
+// Helper to resolve avatar URL (including preset-avatar: prefix)
+function resolveAvatarSrc(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("preset-avatar:")) {
+    const id = url.replace("preset-avatar:", "");
+    return PRESET_AVATAR_MAP[id] ?? null;
+  }
+  return url;
 }
 
 // ── EDIT PROFILE SHEET ────────────────────────────────────
@@ -361,12 +270,12 @@ export default function Profile() {
         {/* Avatar positioned over banner bottom edge */}
         <div className="absolute -bottom-12 left-5">
           {user ? (
-            <AvatarUploader
+            <AvatarPicker
               userId={user.id}
-              avatarUrl={avatarUrl}
+              currentAvatarUrl={avatarUrl}
               displayName={displayName}
               avatarColor={avatarColor}
-              onUploaded={handleAvatarUploaded}
+              onAvatarChanged={handleAvatarUploaded}
             />
           ) : (
             <div
