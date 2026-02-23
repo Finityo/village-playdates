@@ -459,7 +459,7 @@ export default function Onboarding() {
         .eq("id", user.id);
 
       if (error) throw error;
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       toast({ title: "Couldn't save profile", description: err.message, variant: "destructive" });
     } finally {
