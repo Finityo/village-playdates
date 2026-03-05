@@ -34,12 +34,12 @@ export default function Index() {
 
       {/* ── TOP BAR ──────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 py-4 bg-background/95 backdrop-blur border-b border-border sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center shadow-soft">
-            <span className="text-white font-black text-sm">MC</span>
-          </div>
-          <span className="font-display font-black text-lg text-foreground">MomCircle</span>
-        </div>
+         <div className="flex items-center gap-2">
+           <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center shadow-soft">
+             <span className="text-white font-black text-sm">LL</span>
+           </div>
+           <span className="font-display font-black text-lg text-foreground">LittlesLink</span>
+         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/login"
@@ -74,12 +74,12 @@ export default function Index() {
         </div>
 
         <h1 className="font-display text-4xl font-black leading-tight mb-3">
-          Make mom friends.<br />
-          <span className="text-primary">Build your village.</span>
+          Connect with parents.<br />
+          <span className="text-primary">Grow together.</span>
         </h1>
 
         <p className="text-base text-muted-foreground leading-relaxed mb-7">
-          Connect with moms in your neighborhood based on your kids' ages, shared interests, and schedule.
+          Find playdate friends in your neighborhood based on your kids' ages, shared interests, and schedule.
         </p>
 
         <Link
@@ -103,10 +103,10 @@ export default function Index() {
             <span className="text-xs font-bold">ID-verified</span>
           </div>
           <div className="w-px h-8 bg-border" />
-          <div className="flex flex-col items-center gap-1.5">
-            <Users className="h-6 w-6 text-coral" />
-            <span className="text-xs font-bold">12,000+ moms</span>
-          </div>
+           <div className="flex flex-col items-center gap-1.5">
+             <Users className="h-6 w-6 text-coral" />
+             <span className="text-xs font-bold">12,000+ families</span>
+           </div>
           <div className="w-px h-8 bg-border" />
           <div className="flex flex-col items-center gap-1.5">
             <Star className="h-6 w-6 text-secondary" fill="currentColor" />
@@ -150,8 +150,8 @@ export default function Index() {
       </section>
 
       {/* ── TESTIMONIALS ─────────────────────────────────── */}
-      <section className="px-4 pb-8">
-        <h2 className="font-display font-black text-xl mb-5">Moms Love MomCircle</h2>
+       <section className="px-4 pb-8">
+         <h2 className="font-display font-black text-xl mb-5">Families Love LittlesLink</h2>
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
           {testimonials.map((t) => (
             <div key={t.name} className="flex-shrink-0 w-72 bg-card rounded-2xl p-5 border border-border shadow-card">
@@ -169,11 +169,11 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ── BOTTOM CTA ───────────────────────────────────── */}
-      <section className="mx-4 mb-8 rounded-3xl gradient-banner text-white p-6 text-center">
-        <div className="text-3xl mb-3">🛝</div>
-        <h2 className="font-display font-black text-2xl mb-2">Join your village today</h2>
-        <p className="text-sm opacity-80 mb-5">12,000+ moms already building real friendships.</p>
+       {/* ── BOTTOM CTA ───────────────────────────────────── */}
+       <section className="mx-4 mb-8 rounded-3xl gradient-banner text-white p-6 text-center">
+         <div className="text-3xl mb-3">🛝</div>
+         <h2 className="font-display font-black text-2xl mb-2">Join the circle today</h2>
+         <p className="text-sm opacity-80 mb-5">12,000+ families already building real friendships.</p>
         <Link
           to="/signup"
           className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-primary font-bold text-base shadow-soft active:scale-[0.97] transition-all"
@@ -182,9 +182,9 @@ export default function Index() {
         </Link>
       </section>
 
-      <footer className="px-4 py-6 text-center">
-        <div className="font-display font-black text-base text-primary mb-1">MomCircle</div>
-        <p className="text-xs text-muted-foreground">© 2025 · Building villages, one playdate at a time 🛝</p>
+       <footer className="px-4 py-6 text-center">
+         <div className="font-display font-black text-base text-primary mb-1">LittlesLink</div>
+         <p className="text-xs text-muted-foreground">© 2025 · Connecting families through playdates 🛝</p>
         <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/safety" className="hover:text-foreground">Safety</Link>

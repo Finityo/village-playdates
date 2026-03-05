@@ -28,12 +28,12 @@ export default function Terms() {
 
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-8">
           <p className="text-sm text-foreground font-semibold">
-            By using MomCircle, you agree to these terms. Please read them carefully — they're written in plain language, not legalese.
+            By using LittlesLink, you agree to these terms. Please read them carefully — they're written in plain language, not legalese.
           </p>
         </div>
 
-        <Section title="1. Who Can Use MomCircle">
-          <p>MomCircle is available to adults aged 18 and older. By creating an account, you confirm that:</p>
+        <Section title="1. Who Can Use LittlesLink">
+          <p>LittlesLink is available to adults aged 18 and older. By creating an account, you confirm that:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>You are at least 18 years of age.</li>
             <li>You are a parent, guardian, or primary caregiver of at least one child.</li>
@@ -45,15 +45,15 @@ export default function Terms() {
         <Section title="2. Your Account">
           <p>You are responsible for maintaining the security of your account. Please:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Use a strong, unique password for your MomCircle account.</li>
+            <li>Use a strong, unique password for your LittlesLink account.</li>
             <li>Never share your login credentials with anyone.</li>
-            <li>Notify us immediately at support@momcircle.app if you suspect unauthorized access.</li>
+            <li>Notify us immediately at support@littleslink.app if you suspect unauthorized access.</li>
           </ul>
           <p>We reserve the right to suspend or terminate accounts that violate these terms.</p>
         </Section>
 
         <Section title="3. Community Rules">
-          <p>MomCircle is a community built on trust and respect. The following are strictly prohibited:</p>
+          <p>LittlesLink is a community built on trust and respect. The following are strictly prohibited:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong className="text-foreground">No photos of children</strong> on any profile or in any message. This policy is non-negotiable and violations result in immediate removal.</li>
             <li>Harassment, threats, hate speech, or discriminatory behavior of any kind.</li>
@@ -65,27 +65,27 @@ export default function Terms() {
         </Section>
 
         <Section title="4. Content You Share">
-          <p>When you post content on MomCircle (profile info, messages, playdate details), you:</p>
+          <p>When you post content on LittlesLink (profile info, messages, playdate details), you:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Retain ownership of your content.</li>
-            <li>Grant MomCircle a limited license to display it to other members as part of the service.</li>
+            <li>Grant LittlesLink a limited license to display it to other members as part of the service.</li>
             <li>Are responsible for ensuring your content complies with these terms and applicable laws.</li>
           </ul>
           <p>We reserve the right to remove any content that violates our community rules without notice.</p>
         </Section>
 
         <Section title="5. Safety & Meetings">
-          <p>MomCircle facilitates connections between members, but we are not responsible for in-person meetings. When meeting other members:</p>
+          <p>LittlesLink facilitates connections between members, but we are not responsible for in-person meetings. When meeting other members:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Always meet in public places for the first time.</li>
             <li>Use your best judgment about who to meet and when.</li>
-            <li>MomCircle does not conduct background checks on all members (ID verification is voluntary).</li>
+            <li>LittlesLink does not conduct background checks on all members (ID verification is voluntary).</li>
           </ul>
           <p>Please review our <Link to="/safety" className="text-primary font-semibold underline">Safety Center</Link> for detailed guidelines.</p>
         </Section>
 
         <Section title="6. Premium Services">
-          <p>MomCircle offers free and premium membership tiers. For premium subscriptions:</p>
+          <p>LittlesLink offers free and premium membership tiers. For premium subscriptions:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Billing occurs monthly or annually, as selected at purchase.</li>
             <li>You may cancel at any time — your premium access continues until the end of the billing period.</li>
@@ -95,11 +95,11 @@ export default function Terms() {
         </Section>
 
         <Section title="7. Privacy">
-          <p>Your privacy is important to us. Our <Link to="/privacy" className="text-primary font-semibold underline">Privacy Policy</Link> explains how we collect, use, and protect your information. By using MomCircle, you also agree to our Privacy Policy.</p>
+          <p>Your privacy is important to us. Our <Link to="/privacy" className="text-primary font-semibold underline">Privacy Policy</Link> explains how we collect, use, and protect your information. By using LittlesLink, you also agree to our Privacy Policy.</p>
         </Section>
 
         <Section title="8. Disclaimers & Limitations">
-          <p>MomCircle is provided "as is." While we work hard to keep the platform safe and reliable:</p>
+          <p>LittlesLink is provided "as is." While we work hard to keep the platform safe and reliable:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>We cannot guarantee that all members are who they say they are.</li>
             <li>We are not liable for the actions of our members in-person or online.</li>
@@ -108,13 +108,13 @@ export default function Terms() {
         </Section>
 
         <Section title="9. Changes to These Terms">
-          <p>We may update these terms periodically. When we make significant changes, we'll notify you via email or in-app notification at least 14 days before the changes take effect. Continuing to use MomCircle after changes take effect constitutes acceptance of the new terms.</p>
+          <p>We may update these terms periodically. When we make significant changes, we'll notify you via email or in-app notification at least 14 days before the changes take effect. Continuing to use LittlesLink after changes take effect constitutes acceptance of the new terms.</p>
         </Section>
 
         <Section title="10. Contact">
           <p>Questions about these terms? Get in touch:</p>
-          <p className="text-foreground font-semibold">legal@momcircle.app</p>
-          <p>MomCircle · New Braunfels, TX</p>
+          <p className="text-foreground font-semibold">legal@littleslink.app</p>
+          <p>LittlesLink · New Braunfels, TX</p>
         </Section>
       </div>
 
