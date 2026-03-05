@@ -382,7 +382,7 @@ export default function MomProfile() {
           <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-2xl p-4">
             <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-primary mb-0.5">MomCircle Safety Reminder</p>
+              <p className="text-xs font-bold text-primary mb-0.5">LittlesLink Safety Reminder</p>
               <p className="text-xs text-muted-foreground">
                 Always meet in public spots for the first few playdates. Stay safe and enjoy building your village! 🌿
               </p>
